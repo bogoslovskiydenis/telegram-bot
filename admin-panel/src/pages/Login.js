@@ -6,6 +6,8 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
+    const [redirectToDashboard, setRedirectToDashboard] = useState(false);
+    const [redirectToRegister, setRedirectToRegister] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -16,8 +18,7 @@ const Login = () => {
             });
             localStorage.setItem('token', response.data.token);
             setMessage('Login successful');
-            // Use Navigate to redirect to '/dashboard'
-            return <Navigate to="/dashboard" />;
+            setRedirectToDashboard(true);
         } catch (error) {
             if (error.response && error.response.status === 401) {
                 setMessage('Invalid credentials');
@@ -27,8 +28,16 @@ const Login = () => {
         }
     };
 
+    if (redirectToDashboard) {
+        return <Navigate to="/dashboard" />;
+    }
+
+    if (redirectToRegister) {
+        return <Navigate to="/register" />;
+    }
+
     return (
-        <div style={{ maxWidth: '400px', margin: 'auto' }}>
+        <div style={{ maxWidth: '400px', margin: 'auto', textAlign: 'center' }}>
             <h2>Login</h2>
             <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: '1rem' }}>
@@ -54,8 +63,20 @@ const Login = () => {
                 <button type="submit" style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}>Login</button>
             </form>
             {message && <p style={{ marginTop: '1rem', color: message.startsWith('Invalid') ? 'red' : 'green' }}>{message}</p>}
-            {/* Register button can still use history.push */}
-            <button onClick={() => <Navigate to="/register" />} style={{ marginTop: '1rem', padding: '0.5rem 1rem', fontSize: '1rem' }}>Register</button>
+            <button
+                onClick={() => setRedirectToRegister(true)}
+                style={{
+                    marginTop: '1rem',
+                    padding: '0.5rem 1rem',
+                    fontSize: '1rem',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer'
+                }}
+            >
+                Register
+            </button>
         </div>
     );
 };

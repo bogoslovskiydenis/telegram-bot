@@ -1,0 +1,47 @@
+/* Dashboard.css */
+.dashboard {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.dashboard button {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+}
+
+.dashboard button:hover {
+    background-color: #0056b3;
+}
+
+.dashboard .view {
+    margin-top: 20px;
+}
+
+.dashboard textarea, .dashboard input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.dashboard p {
+    text-align: center;
+    color: green;
+}

@@ -1,39 +1,32 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-
+import './Dashboard.css'
 const Dashboard = () => {
+    const [currentView, setCurrentView] = useState('send');
     const [textMessage, setTextMessage] = useState('');
     const [videoFile, setVideoFile] = useState(null);
+    const [welcomeText, setWelcomeText] = useState('');
+    const [newImage, setNewImage] = useState(null);
     const [messageStatus, setMessageStatus] = useState('');
 
     // Replace with your bot token and chat ID
     const BOT_TOKEN = '6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU';
     const CHAT_ID = '5230934145';
 
-    const handleTextChange = (e) => {
-        setTextMessage(e.target.value);
-    };
-
-    const handleVideoChange = (e) => {
-        setVideoFile(e.target.files[0]);
-    };
+    const handleTextChange = (e) => setTextMessage(e.target.value);
+    const handleVideoChange = (e) => setVideoFile(e.target.files[0]);
 
     const sendMessageToTelegram = async () => {
         try {
-            // Prepare form data for both text and video
             const formData = new FormData();
             formData.append('chat_id', CHAT_ID);
-            formData.append('caption', textMessage); // Caption for the video
+            formData.append('caption', textMessage);
             formData.append('video', videoFile);
 
-            // Send POST request to Telegram Bot API's sendVideo endpoint
             await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendVideo`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            // Clear form fields and show success message
             setTextMessage('');
             setVideoFile(null);
             setMessageStatus('Video sent successfully!');
@@ -43,18 +36,65 @@ const Dashboard = () => {
         }
     };
 
+    // Handlers for updating bot content
+    const handleWelcomeTextChange = (e) => setWelcomeText(e.target.value);
+    const handleNewImageChange = (e) => setNewImage(e.target.files[0]);
+
+    const updateBotContent = async () => {
+        try {
+            await axios.post('http://localhost:5000/api/update-text', { text: welcomeText });
+            const formData = new FormData();
+            formData.append('image', newImage);
+
+            await axios.post('http://localhost:5000/api/update-image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            setWelcomeText('');
+            setNewImage(null);
+            setMessageStatus('Bot content updated successfully!');
+        } catch (error) {
+            console.error('Error updating bot content:', error);
+            setMessageStatus('Failed to update bot content. Please try again.');
+        }
+    };
+
+    // Toggle between views
+    const switchView = (view) => setCurrentView(view);
     return (
-        <div>
+        <div className="dashboard">
             <h2>Dashboard</h2>
             <div>
-                <label htmlFor="textMessage">Text Message:</label>
-                <textarea id="textMessage" value={textMessage} onChange={handleTextChange} rows="4" cols="50" />
+                <button onClick={() => switchView('send')}>Send Messages and Video</button>
+                <button onClick={() => switchView('update')}>Update Bot Content</button>
             </div>
-            <div>
-                <label htmlFor="videoFile">Video File (MP4):</label>
-                <input type="file" id="videoFile" accept="video/mp4" onChange={handleVideoChange} />
-            </div>
-            <button onClick={sendMessageToTelegram}>Send Message and Video to Telegram</button>
+            {currentView === 'send' ? (
+                <div className="view">
+                    <h3>Send Message and Video to Telegram</h3>
+                    <div>
+                        <label>Text Message:</label>
+                        <textarea value={textMessage} onChange={handleTextChange} rows="4" cols="50" />
+                    </div>
+                    <div>
+                        <label>Video File (MP4):</label>
+                        <input type="file" accept="video/mp4" onChange={handleVideoChange} />
+                    </div>
+                    <button onClick={sendMessageToTelegram}>Send Message and Video</button>
+                </div>
+            ) : (
+                <div className="view">
+                    <h3>Update Bot Content</h3>
+                    <div>
+                        <label>Welcome Text:</label>
+                        <textarea value={welcomeText} onChange={handleWelcomeTextChange} rows="4" cols="50" />
+                    </div>
+                    <div>
+                        <label>New Image:</label>
+                        <input type="file" accept="image/*" onChange={handleNewImageChange} />
+                    </div>
+                    <button onClick={updateBotContent}>Update Bot Content</button>
+                </div>
+            )}
             {messageStatus && <p>{messageStatus}</p>}
         </div>
     );
