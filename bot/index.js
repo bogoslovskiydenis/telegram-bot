@@ -26,7 +26,7 @@ bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     if (msg.text.toLowerCase() === 'старт') {
         // Отправляем приветственное видео и текст
-        const videoPath = './assets/1th.mp4'; // Убедитесь, что у вас есть файл welcome.mp4 в директории assets
+        const videoPath = './assets/1th.mp4';
         const welcomeDescription = `
             Добро пожаловать в нашего бота!
             Этот бот может помочь вам с [описание функционала бота].
