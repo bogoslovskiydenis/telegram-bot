@@ -1,13 +1,43 @@
 import TelegramBot from 'node-telegram-bot-api';
 import path from "path";
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 const token = '6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU';
 
 const bot = new TelegramBot(token, {polling: true});
+const firebaseConfig = {
+    apiKey: "AIzaSyCHzKeTsZ43c86z4y6cvbZDOtNxnl0CM7U",
+    authDomain: "tgbot-cc51a.firebaseapp.com",
+    projectId: "tgbot-cc51a",
+    storageBucket: "tgbot-cc51a.appspot.com",
+    messagingSenderId: "42637878178",
+    appId: "1:42637878178:web:129d927716a8ee291288fb"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Функция записи user_id в Firebase
+const writeUserData = async (userId) => {
+    try {
+        await setDoc(doc(db, 'users', String(userId)), {
+            userId: userId,
+        });
+        console.log('User data saved successfully');
+    } catch (error) {
+        console.error('Error writing user data to Firestore:', error);
+    }
+};
 
 // Слушаем команду /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    // Записываем userId в Firebase
+    writeUserData(userId);
 
     // Приветственное сообщение с кнопкой "Старт"
     const welcomeMessage = 'Добро пожаловать! Нажмите кнопку "Старт" ниже, чтобы узнать больше о боте.';
