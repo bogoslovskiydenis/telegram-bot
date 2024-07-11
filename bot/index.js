@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import path from "path";
 
 const token = '6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU';
 
@@ -81,7 +82,28 @@ bot.on('callback_query', (callbackQuery) => {
     // Обработка нажатия на кнопки Inline Keyboard
     switch (data) {
         case 'bonuses':
-            bot.sendMessage(chatId, 'Здесь будут бонусы и акции');
+            // Открываем новый раздел с картинкой и тремя кнопками
+            const bonusSectionMessage = 'Выберите тип бонусов:';
+            const bonusOptions = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Бонусы новым игрокам', callback_data: 'new_player_bonuses' }],
+                        [{ text: 'Другие бонусы', callback_data: 'other_bonuses' }],
+                        [{ text: 'Вернуться', callback_data: 'back_to_start' }]
+                    ]
+                }
+            };
+
+            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
+            const imageURL = path.join("assets/1.png");
+            bot.sendPhoto(chatId, imageURL, { caption: bonusSectionMessage })
+                .then(() => {
+                    bot.sendMessage(chatId, bonusSectionMessage, bonusOptions);
+                })
+                .catch((error) => {
+                    console.error('Ошибка при отправке изображения:', error);
+                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+                });
             break;
         case 'top_slots':
             bot.sendMessage(chatId, 'Здесь будет список TOP популярных слотов');
@@ -94,6 +116,21 @@ bot.on('callback_query', (callbackQuery) => {
             break;
         case 'qna_reviews':
             bot.sendMessage(chatId, 'Здесь будут вопросы-ответы и отзывы');
+            break;
+        case 'back_to_start':
+            // Возвращаемся к основному разделу выбора
+            const startMessage = 'Выберите раздел:';
+            bot.sendMessage(chatId, startMessage, {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Бонусы и акции', callback_data: 'bonuses' }],
+                        [{ text: 'TOP популярных слотов', callback_data: 'top_slots' }],
+                        [{ text: 'TOP выигрышей', callback_data: 'top_wins' }],
+                        [{ text: 'Победные схемы', callback_data: 'winning_strategies' }],
+                        [{ text: 'Вопрос-ответ-отзывы', callback_data: 'qna_reviews' }]
+                    ]
+                }
+            });
             break;
         default:
             break;
