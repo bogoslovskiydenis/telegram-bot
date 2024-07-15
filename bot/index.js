@@ -2,18 +2,18 @@ import TelegramBot from 'node-telegram-bot-api';
 import path from "path";
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
-
+import {firebaseConfig} from "./firebase.js"
 const token = '6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU';
 
 const bot = new TelegramBot(token, {polling: true});
-const firebaseConfig = {
-    apiKey: "AIzaSyCHzKeTsZ43c86z4y6cvbZDOtNxnl0CM7U",
-    authDomain: "tgbot-cc51a.firebaseapp.com",
-    projectId: "tgbot-cc51a",
-    storageBucket: "tgbot-cc51a.appspot.com",
-    messagingSenderId: "42637878178",
-    appId: "1:42637878178:web:129d927716a8ee291288fb"
-};
+// const firebaseConfig = {
+//     apiKey: "AIzaSyCHzKeTsZ43c86z4y6cvbZDOtNxnl0CM7U",
+//     authDomain: "tgbot-cc51a.firebaseapp.com",
+//     projectId: "tgbot-cc51a",
+//     storageBucket: "tgbot-cc51a.appspot.com",
+//     messagingSenderId: "42637878178",
+//     appId: "1:42637878178:web:129d927716a8ee291288fb"
+// };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -136,8 +136,42 @@ bot.on('callback_query', (callbackQuery) => {
                 });
             break;
         case 'top_slots':
-            bot.sendMessage(chatId, 'Здесь будет список TOP популярных слотов');
+            // Открываем раздел с топ популярных слотов
+            const topSlotsMessage = `
+                Самые популярные слоты за прошлую неделю:
+
+                1. **Sweet bonanza** - 5 776 698
+                2. **The ref reactor** - 3 455 893
+                3. **Sweet coin** - 3 398 765
+                4. **Book of ra** - 3 387 112
+                5. **Fortune five** - 3 000 453
+                6. **Gold rush** - 2 954 777
+                7. **Frozen crown** - 2 854 121
+                8. **Zeus** - 2 765 443
+                9. **Book of mystery** - 2 690 418
+            `;
+            const topSlotsOptions = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Забрать бонус', url: 'https://google.com.ua' }],
+                        [{ text: 'Главное меню', callback_data: 'back_to_start' }]
+                    ]
+                },
+                parse_mode: 'Markdown'
+            };
+
+            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
+            const top_slotsImageURL = 'assets/1.png';
+            bot.sendPhoto(chatId, top_slotsImageURL)
+                .then(() => {
+                    bot.sendMessage(chatId, topSlotsMessage, topSlotsOptions);
+                })
+                .catch((error) => {
+                    console.error('Ошибка при отправке изображения:', error);
+                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+                });
             break;
+
         case 'top_wins':
             bot.sendMessage(chatId, 'Здесь будет список TOP выигрышей');
             break;
@@ -174,10 +208,10 @@ bot.on('callback_query', (callbackQuery) => {
         case 'other_bonuses':
             // Открываем новый раздел с картинкой, текстом и кнопками
             const otherBonusesMessage = `
-*ПЕРВЫЙ КАЗИНО БОНУС*
+[ПЕРВЫЙ КАЗИНО БОНУС](https://google.com)
 100% до ₸250000
 
-*ВТОРОЙ КАЗИНО БОНУС*
+                                                            *ВТОРОЙ КАЗИНО БОНУС*
 50% до ₸250000
 
 *ТРЕТИЙ КАЗИНО БОНУС*
@@ -230,7 +264,7 @@ Live-казино бонус 25%
                 }
             });
             break;
-        default:
-            break;
+
+
     }
 });
