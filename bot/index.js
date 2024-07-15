@@ -75,7 +75,8 @@ bot.on('message', (msg) => {
                     ],
                     resize_keyboard: true,
                     one_time_keyboard: true
-                }
+                },
+                parse_mode: 'Markdown'
             });
         }).catch(err => {
             console.error('Ошибка при отправке видео:', err);
@@ -152,7 +153,7 @@ bot.on('callback_query', (callbackQuery) => {
             const newPlayerBonusOptions = {
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: 'Забрать бонус', url: 'https://www.google.com.ua/' }],
+                        [{ text: 'Забрать бонус', url: 'https://google.com.ua/' }],
                         [{ text: 'Главное меню', callback_data: 'back_to_start' }]
                     ]
                 }
@@ -163,6 +164,51 @@ bot.on('callback_query', (callbackQuery) => {
             bot.sendPhoto(chatId, newPlayerBonusImageURL)
                 .then(() => {
                     bot.sendMessage(chatId, newPlayerBonusMessage, newPlayerBonusOptions);
+                })
+                .catch((error) => {
+                    console.error('Ошибка при отправке изображения:', error);
+                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+                });
+            break;
+
+        case 'other_bonuses':
+            // Открываем новый раздел с картинкой, текстом и кнопками
+            const otherBonusesMessage = `
+*ПЕРВЫЙ КАЗИНО БОНУС*
+100% до ₸250000
+
+*ВТОРОЙ КАЗИНО БОНУС*
+50% до ₸250000
+
+*ТРЕТИЙ КАЗИНО БОНУС*
+500FS
+
+*СЕКРЕТНЫЕ БОНУСЫ*
+Только в нашем предложении
+
+*LIVE-РЕЛОАД В ПОНЕДЕЛЬНИК*
+Live-казино бонус 25%
+
+*ФРИСПИНЫ СРЕДЫ*
+100 фриспинов на удачу
+
+*ПЯТНИЧНЫЙ РЕЛОАД*
+30% до ₸50000`;
+            const otherBonusesOptions = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Забрать бонус', url: 'https://google.com.ua' }],
+                        [{ text: 'Главное меню', callback_data: 'back_to_start' }]
+                    ]
+                },
+                parse_mode: 'Markdown'
+            };
+
+            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
+            const otherBonusesImageURL = 'assets/1.png';
+            bot.sendPhoto(chatId, otherBonusesImageURL)
+                .then(() => {
+                    bot.sendMessage(chatId, otherBonusesMessage, otherBonusesOptions);
                 })
                 .catch((error) => {
                     console.error('Ошибка при отправке изображения:', error);
