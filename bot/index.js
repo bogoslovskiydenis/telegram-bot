@@ -30,14 +30,13 @@ const writeUserData = async (userId) => {
         console.error('Error writing user data to Firestore:', error);
     }
 };
-
 // Слушаем команду /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
 
     // Записываем userId в Firebase
-    writeUserData(userId);
+    writeUserData(userId );
 
     // Приветственное сообщение с кнопкой "Старт"
     const welcomeMessage = 'Добро пожаловать! Нажмите кнопку "Старт" ниже, чтобы узнать больше о боте.';
@@ -126,7 +125,7 @@ bot.on('callback_query', (callbackQuery) => {
 
             // Отправляем сообщение с картинкой (замените путь на ваше изображение)
             const imageURL = path.join("assets/1.png");
-            bot.sendPhoto(chatId, imageURL, { caption: bonusSectionMessage })
+            bot.sendPhoto(chatId, imageURL )
                 .then(() => {
                     bot.sendMessage(chatId, bonusSectionMessage, bonusOptions);
                 })
@@ -146,6 +145,29 @@ bot.on('callback_query', (callbackQuery) => {
             break;
         case 'qna_reviews':
             bot.sendMessage(chatId, 'Здесь будут вопросы-ответы и отзывы');
+            break;
+        case 'new_player_bonuses':
+            // Открываем новый раздел с картинкой, текстом и кнопками
+            const newPlayerBonusMessage = 'Всем новым игрокам Казино дарит приветственные бонус в 150% от суммы первого депозита в размере до 75000 тенге, а также 50 фриспинов.';
+            const newPlayerBonusOptions = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Забрать бонус', url: 'https://www.google.com.ua/' }],
+                        [{ text: 'Главное меню', callback_data: 'back_to_start' }]
+                    ]
+                }
+            };
+
+            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
+            const newPlayerBonusImageURL = 'assets/1.png';
+            bot.sendPhoto(chatId, newPlayerBonusImageURL)
+                .then(() => {
+                    bot.sendMessage(chatId, newPlayerBonusMessage, newPlayerBonusOptions);
+                })
+                .catch((error) => {
+                    console.error('Ошибка при отправке изображения:', error);
+                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+                });
             break;
         case 'back_to_start':
             // Возвращаемся к основному разделу выбора
