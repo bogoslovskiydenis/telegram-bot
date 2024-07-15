@@ -173,8 +173,42 @@ bot.on('callback_query', (callbackQuery) => {
             break;
 
         case 'top_wins':
-            bot.sendMessage(chatId, 'Здесь будет список TOP выигрышей');
+            // Открываем раздел с топ популярных слотов
+            const topWinsMessage = `
+                Самые популярные слоты за прошлую неделю:
+
+                1. **Sweet bonanza** - 5 776 698 USD
+                2. **The ref reactor** - 3 455 893 USD
+                3. **Sweet coin** - 3 398 765 USD
+                4. **Book of ra** - 3 387 112 USD
+                5. **Fortune five** - 3 000 453 USD
+                6. **Gold rush** - 2 954 777 USD
+                7. **Frozen crown** - 2 854 121 USD
+                8. **Zeus** - 2 765 443 USD
+                9. **Book of mystery** - 2 690 418 USD
+            `;
+            const topWinsOptions = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Забрать бонус', url: 'https://google.com.ua' }],
+                        [{ text: 'Главное меню', callback_data: 'back_to_start' }]
+                    ]
+                },
+                parse_mode: 'Markdown'
+            };
+
+            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
+            const topWinsImageURL = 'assets/1.png';
+            bot.sendPhoto(chatId, topWinsImageURL)
+                .then(() => {
+                    bot.sendMessage(chatId, topWinsMessage, topWinsOptions);
+                })
+                .catch((error) => {
+                    console.error('Ошибка при отправке изображения:', error);
+                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+                });
             break;
+
         case 'winning_strategies':
             bot.sendMessage(chatId, 'Здесь будут победные стратегии');
             break;
