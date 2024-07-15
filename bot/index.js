@@ -6,14 +6,6 @@ import {firebaseConfig} from "./firebase.js"
 const token = '6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU';
 
 const bot = new TelegramBot(token, {polling: true});
-// const firebaseConfig = {
-//     apiKey: "AIzaSyCHzKeTsZ43c86z4y6cvbZDOtNxnl0CM7U",
-//     authDomain: "tgbot-cc51a.firebaseapp.com",
-//     projectId: "tgbot-cc51a",
-//     storageBucket: "tgbot-cc51a.appspot.com",
-//     messagingSenderId: "42637878178",
-//     appId: "1:42637878178:web:129d927716a8ee291288fb"
-// };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -31,24 +23,29 @@ const writeUserData = async (userId) => {
     }
 };
 // Слушаем команду /start
-bot.onText(/\/start/, (msg) => {
+bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
 
-    // Записываем userId в Firebase
-    writeUserData(userId );
+    try {
+        // Write userId to Firestore
+        await writeUserData(userId);
 
-    // Приветственное сообщение с кнопкой "Старт"
-    const welcomeMessage = 'Добро пожаловать! Нажмите кнопку "Старт" ниже, чтобы узнать больше о боте.';
-    bot.sendMessage(chatId, welcomeMessage, {
-        reply_markup: {
-            keyboard: [
-                [{text: 'Старт'}]
-            ],
-            resize_keyboard: true,
-            one_time_keyboard: true
-        }
-    });
+        // Send welcome message
+        const welcomeMessage = 'Добро пожаловать! Нажмите кнопку "Старт" ниже, чтобы узнать больше о боте.';
+        await bot.sendMessage(chatId, welcomeMessage, {
+            reply_markup: {
+                keyboard: [
+                    [{ text: 'Старт' }]
+                ],
+                resize_keyboard: true,
+                one_time_keyboard: true
+            }
+        });
+    } catch (error) {
+        console.error('Error handling /start command:', error);
+        // Handle the error as needed
+    }
 });
 
 // Слушаем нажатие кнопки "Старт"
@@ -58,11 +55,12 @@ bot.on('message', (msg) => {
         // Отправляем приветственное видео и текст
         const videoPath = './assets/1th.mp4';
         const welcomeDescription = `
-*Супер-Бонусы лучшего казино Казахстана!*
-*Рейтинг популярных слотов*
-*Слоты с самыми большими выигрышами*
-*Победные схемы от наших подписчиков*
-*Вопрос-ответ и отзыв*
+        *                           *
+               **Супер-Бонусы лучшего казино Казахстана!**
+               **Рейтинг популярных слотов**
+               **Слоты с самыми большими выигрышами**
+               **Победные схемы от наших подписчиков**
+               **Вопрос-ответ и отзыв**
         `;
 
         // Отправляем видео
@@ -119,7 +117,7 @@ bot.on('callback_query', (callbackQuery) => {
                     inline_keyboard: [
                         [{ text: 'Бонусы новым игрокам', callback_data: 'new_player_bonuses' }],
                         [{ text: 'Другие бонусы', callback_data: 'other_bonuses' }],
-                        [{ text: 'Вернуться', callback_data: 'back_to_start' }]
+                        [{ text: 'Главное меню', callback_data: 'back_to_start' }]
                     ]
                 }
             };
@@ -171,7 +169,6 @@ bot.on('callback_query', (callbackQuery) => {
                     bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
                 });
             break;
-
         case 'top_wins':
             // Открываем раздел с топ популярных слотов
             const topWinsMessage = `
@@ -208,9 +205,35 @@ bot.on('callback_query', (callbackQuery) => {
                     bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
                 });
             break;
-
         case 'winning_strategies':
-            bot.sendMessage(chatId, 'Здесь будут победные стратегии');
+            // Открываем раздел с победными схемами
+            const winningStrategiesMessage = `
+Лучшие победные схемы от наших подписчиков:
+
+Также вы можете поделиться со всеми своей победной схемой
+Кнопка **Кнопка написать**
+            `;
+            const winningStrategiesOptions = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Схемы', callback_data: 'view_strategies' }],
+                        [{ text: 'Кнопка написать', callback_data: 'write_strategy' }],
+                        [{ text: 'Главное меню', callback_data: 'back_to_start' }]
+                    ]
+                },
+                parse_mode: 'Markdown'
+            };
+            const winningStrategiesURL = 'assets/1.png';
+            bot.sendPhoto(chatId, winningStrategiesURL)
+                .then(() => {
+                    bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
+                })
+                .catch((error) => {
+                    console.error('Ошибка при отправке изображения:', error);
+                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+                });
+            // Отправляем сообщение с текстом
+            bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
             break;
         case 'qna_reviews':
             bot.sendMessage(chatId, 'Здесь будут вопросы-ответы и отзывы');
@@ -238,7 +261,6 @@ bot.on('callback_query', (callbackQuery) => {
                     bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
                 });
             break;
-
         case 'other_bonuses':
             // Открываем новый раздел с картинкой, текстом и кнопками
             const otherBonusesMessage = `
@@ -298,7 +320,5 @@ Live-казино бонус 25%
                 }
             });
             break;
-
-
     }
 });
