@@ -12,11 +12,13 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5003/api/auth/login', {
-                username,
+            const response = await axios.post('http://localhost:5004/login', {
+                email: username, // предполагая, что username это email
                 password,
             });
-            localStorage.setItem('token', response.data.token);
+
+            // Сохраняем UID пользователя вместо токена
+            localStorage.setItem('uid', response.data.uid);
             setMessage('Login successful');
             setRedirectToDashboard(true);
         } catch (error) {
@@ -24,6 +26,7 @@ const Login = () => {
                 setMessage('Invalid credentials');
             } else {
                 setMessage('Something went wrong. Please try again later.');
+                console.error('Login error:', error);
             }
         }
     };

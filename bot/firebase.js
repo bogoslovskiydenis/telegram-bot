@@ -1,3 +1,4 @@
+export const BOT_TOKEN = '6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU';
 export const firebaseConfig = {
     apiKey: "AIzaSyCHzKeTsZ43c86z4y6cvbZDOtNxnl0CM7U",
     authDomain: "tgbot-cc51a.firebaseapp.com",

@@ -27,10 +27,10 @@ const writeUserData = async (userId , username) => {
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
-    const username = msg.from.username;
+    const firstName = msg.from.first_name;
     try {
         // Write userId to Firestore
-       await  writeUserData(userId , username);
+       await  writeUserData(userId , firstName);
 
         // Send welcome message
         const welcomeMessage = 'Добро пожаловать! Нажмите кнопку "Старт" ниже, чтобы узнать больше о боте.';
@@ -265,11 +265,10 @@ bot.on('callback_query', (callbackQuery) => {
         case 'other_bonuses':
             // Открываем новый раздел с картинкой, текстом и кнопками
             const otherBonusesMessage = `
-                       *    *
 [ПЕРВЫЙ КАЗИНО БОНУС](https://google.com)
 100% до ₸250000
 
-*ВТОРОЙ КАЗИНО БОНУС*
+                                                            *ВТОРОЙ КАЗИНО БОНУС*
 50% до ₸250000
 
 *ТРЕТИЙ КАЗИНО БОНУС*

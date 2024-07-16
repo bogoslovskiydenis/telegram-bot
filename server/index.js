@@ -67,12 +67,42 @@ app.post('/login', async (req, res) => {
         res.status(401).json({ error: 'Authentication failed' });
     }
 });
+let botText = {
+    welcome: `**Супер-Бонусы лучшего казино Казахстана!**
+**Рейтинг популярных слотов**
+**Слоты с самыми большими выигрышами**
+**Победные схемы от наших подписчиков**
+**Вопрос-ответ и отзыв**`
+};
 
+// API эндпоинт для обновления текста
+app.post('/api/update-text', (req, res) => {
+    const { text } = req.body;
+    if (!text) {
+        return res.status(400).json({ error: 'Text is required' });
+    }
+
+    botText.welcome = text;
+    res.json({ message: 'Welcome text updated successfully', newText: botText.welcome });
+});
+
+// API эндпоинт для получения текущего текста
+app.get('/api/get-text', (req, res) => {
+    res.json({ text: botText.welcome });
+});
 // Protected route example
 app.get('/protected', authenticateToken, (req, res) => {
     res.json({ message: 'Access granted to protected route' });
 });
+app.post('/api/update-text', (req, res) => {
+    const { text } = req.body;
+    if (!text) {
+        return res.status(400).json({ error: 'Text is required' });
+    }
 
+    botConfig.welcomeDescription = text;
+    res.json({ message: 'Welcome text updated successfully' });
+});
 // Middleware to authenticate token
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
