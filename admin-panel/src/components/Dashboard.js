@@ -147,7 +147,7 @@ const Dashboard = () => {
             <h2>Dashboard</h2>
             <div className="main-menu">
                 <button onClick={() => switchView('send')}>Send Messages and Video</button>
-                {/*<button onClick={() => switchView('update')}>Update Bot Content</button>*/}
+                <button onClick={() => switchView('update')}>Update Bot Content</button>
             </div>
             <div className={`burger-menu ${isMenuOpen ? 'open' : ''}`}>
                 <button onClick={toggleMenu}>☰</button>
