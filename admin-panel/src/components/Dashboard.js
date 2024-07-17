@@ -3,7 +3,7 @@ import axios from 'axios';
 import './Dashboard.css'
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from "./firebase";
+import { firebaseConfig } from "../firebase";
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
@@ -38,8 +38,19 @@ const Dashboard = () => {
     }, [db]);
 
     useEffect(() => {
-        fetchUserIds();
+        const fetchData = async () => {
+            try {
+                await fetchUserIds();
+            } catch (error) {
+                console.error('Error fetching user IDs:', error);
+                setMessageStatus('Failed to fetch user IDs. Please try again.');
+            }
+        };
+
+        fetchData();
+
     }, [fetchUserIds]);
+
 
     const handleTextChange = (e) => setTextMessage(e.target.value);
     const handleVideoChange = (e) => setVideoFile(e.target.files[0]);
@@ -136,7 +147,7 @@ const Dashboard = () => {
             <h2>Dashboard</h2>
             <div className="main-menu">
                 <button onClick={() => switchView('send')}>Send Messages and Video</button>
-                <button onClick={() => switchView('update')}>Update Bot Content</button>
+                {/*<button onClick={() => switchView('update')}>Update Bot Content</button>*/}
             </div>
             <div className={`burger-menu ${isMenuOpen ? 'open' : ''}`}>
                 <button onClick={toggleMenu}>☰</button>
