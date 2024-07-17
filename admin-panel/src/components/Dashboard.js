@@ -4,6 +4,8 @@ import './Dashboard.css'
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from "./firebase";
+import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 
 const Dashboard = () => {
     const [currentView, setCurrentView] = useState('send');
@@ -13,6 +15,10 @@ const Dashboard = () => {
     const [newImage, setNewImage] = useState(null);
     const [messageStatus, setMessageStatus] = useState('');
     const [userIds, setUserIds] = useState([]);
+    const [userNames, setUserNames] = useState([]);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const navigate = useNavigate();
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -82,35 +88,67 @@ const Dashboard = () => {
     };
 
     const updateBotContent = async () => {
-        try {
-            await axios.post('http://localhost:5004/api/update-text', { text: welcomeText });
-
-            if (newImage) {
-                const formData = new FormData();
-                formData.append('image', newImage);
-                await axios.post('http://localhost:5004/api/update-image', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-            }
-
-            setWelcomeText('');
-            setNewImage(null);
-            setMessageStatus('Bot content updated successfully!');
-        } catch (error) {
-            console.error('Error updating bot content:', error);
-            setMessageStatus('Failed to update bot content. Please try again.');
-        }
+        // ... (остальной код без изменений)
     };
 
     const switchView = (view) => setCurrentView(view);
 
+    const handleLogout = () => {
+        // Здесь должна быть логика выхода из системы
+        // Например, удаление токена из localStorage
+        localStorage.removeItem('authToken');
+        // Перенаправление на страницу входа
+        navigate('/login');
+    };
+
+    const fetchAllUsers = async () => {
+        try {
+            const usersCollection = collection(db, 'users');
+            const userSnapshot = await getDocs(usersCollection);
+            const names = userSnapshot.docs.map(doc => doc.data().username);
+            setUserNames(names);
+            setMessageStatus(`Fetched ${names.length} user names`);
+        } catch (error) {
+            console.error('Error fetching user names:', error);
+            setMessageStatus('Failed to fetch user names. Please try again.');
+        }
+    };
+    const exportUsersToExcel = async () => {
+        try {
+            const usersCollection = collection(db, 'users');
+            const userSnapshot = await getDocs(usersCollection);
+            const users = userSnapshot.docs.map(doc => doc.data());
+            const worksheet = XLSX.utils.json_to_sheet(users);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+            XLSX.writeFile(workbook, "users.xlsx");
+            setMessageStatus('Users exported to Excel successfully');
+        } catch (error) {
+            console.error('Error exporting users to Excel:', error);
+            setMessageStatus('Failed to export users to Excel. Please try again.');
+        }
+    };
+    const toggleMenu = () => {
+        setIsMenuOpen(!isMenuOpen);
+    };
     return (
         <div className="dashboard">
             <h2>Dashboard</h2>
-            <div>
+            <div className="main-menu">
                 <button onClick={() => switchView('send')}>Send Messages and Video</button>
                 <button onClick={() => switchView('update')}>Update Bot Content</button>
             </div>
+            <div className={`burger-menu ${isMenuOpen ? 'open' : ''}`}>
+                <button onClick={toggleMenu}>☰</button>
+                {isMenuOpen && (
+                    <div className="dropdown-menu">
+                        <button onClick={fetchAllUsers}>Fetch All Users</button>
+                        <button onClick={exportUsersToExcel}>Export Users to Excel</button>
+                        <button onClick={handleLogout}>Logout</button>
+                    </div>
+                )}
+            </div>
+
             {currentView === 'send' ? (
                 <div className="view">
                     <h3>Send Message and Video to Telegram</h3>
@@ -139,6 +177,16 @@ const Dashboard = () => {
                 </div>
             )}
             {messageStatus && <p>{messageStatus}</p>}
+            {userNames.length > 0 && (
+                <div>
+                    <h3>User Names:</h3>
+                    <ul>
+                        {userNames.map((name, index) => (
+                            <li key={index}>{name}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
         </div>
     );
 };

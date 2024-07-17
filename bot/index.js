@@ -12,10 +12,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // Функция записи user_id в Firebase
-const writeUserData = async (userId , username) => {
+const writeUserData = async (userId, firstName, username) => {
     try {
         await setDoc(doc(db, 'users', String(userId)), {
             userId: userId,
+            firstName: firstName,
             username: username
         });
         console.log('User data saved successfully');
@@ -23,14 +24,17 @@ const writeUserData = async (userId , username) => {
         console.error('Error writing user data to Firestore:', error);
     }
 };
+
 // Слушаем команду /start
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     const firstName = msg.from.first_name;
+    const username = msg.from.username || ''; // Use an empty string if the username is not available
+
     try {
         // Write userId to Firestore
-       await  writeUserData(userId , firstName);
+        await writeUserData(userId, firstName, username);
 
         // Send welcome message
         const welcomeMessage = 'Добро пожаловать! Нажмите кнопку "Старт" ниже, чтобы узнать больше о боте.';

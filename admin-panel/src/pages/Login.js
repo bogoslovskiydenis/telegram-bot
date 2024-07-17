@@ -13,12 +13,12 @@ const Login = () => {
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5004/login', {
-                email: username, // предполагая, что username это email
+                email: username,
                 password,
             });
 
-            // Сохраняем UID пользователя вместо токена
-            localStorage.setItem('uid', response.data.uid);
+            // Save authToken to localStorage
+            localStorage.setItem('authToken', response.data.authToken);
             setMessage('Login successful');
             setRedirectToDashboard(true);
         } catch (error) {
@@ -36,7 +36,7 @@ const Login = () => {
     }
 
     if (redirectToRegister) {
-        return <Navigate to="/register" />;
+        return <Navigate to="/login" />;
     }
 
     return (
