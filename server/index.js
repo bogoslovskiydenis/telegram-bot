@@ -43,26 +43,34 @@ app.use((err, req, res, next) => {
 app.post('/register', async (req, res) => {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+    }
+
     try {
         const userRecord = await admin.auth().createUser({
-            email,
-            password
+            email: email,
+            password: password
         });
-        res.status(201).json({ message: 'User created successfully', uid: userRecord.uid });
+
+        res.status(201).json({
+            message: 'User registered successfully',
+            uid: userRecord.uid
+        });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        console.error('Error creating new user:', error);
+        res.status(500).json({ error: 'Error registering user' });
     }
 });
 
+
 // Login endpoint
 app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { idToken } = req.body;
 
     try {
-        const userCredential = await admin.auth().getUserByEmail(email);
-        // Note: In a real-world scenario, you would use Firebase Client SDK for authentication
-        // This server-side login is for demonstration purposes only
-        res.status(200).json({ message: 'Login successful', uid: userCredential.uid });
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        res.status(200).json({ message: 'Login successful', uid: decodedToken.uid });
     } catch (error) {
         res.status(401).json({ error: 'Authentication failed' });
     }

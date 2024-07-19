@@ -6,6 +6,8 @@ import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from "../firebase";
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import {getAuth} from "firebase/auth";
+import { signOut } from "firebase/auth";
 
 const Dashboard = () => {
     const [currentView, setCurrentView] = useState('send');
@@ -23,7 +25,7 @@ const Dashboard = () => {
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const BOT_TOKEN = '6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU';
+    const BOT_TOKEN = "6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU";
 
     const fetchUserIds = useCallback(async () => {
         try {
@@ -104,12 +106,14 @@ const Dashboard = () => {
 
     const switchView = (view) => setCurrentView(view);
 
-    const handleLogout = () => {
-        // Здесь должна быть логика выхода из системы
-        // Например, удаление токена из localStorage
-        localStorage.removeItem('authToken');
-        // Перенаправление на страницу входа
-        navigate('/login');
+    const handleLogout = async () => {
+        const auth = getAuth();
+        try {
+            await signOut(auth);
+            navigate('/login');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
     };
 
     const fetchAllUsers = async () => {
@@ -146,8 +150,9 @@ const Dashboard = () => {
         <div className="dashboard">
             <h2>Dashboard</h2>
             <div className="main-menu">
-                <button onClick={() => switchView('send')}>Send Messages and Video</button>
-                <button onClick={() => switchView('update')}>Update Bot Content</button>
+                {/*<button onClick={() => switchView('send')}>Send Messages and Video</button>*/}
+                {/*Update Bot Content We need write node server */}
+                {/*<button onClick={() => switchView('update')}>Update Bot Content</button>*/}
             </div>
             <div className={`burger-menu ${isMenuOpen ? 'open' : ''}`}>
                 <button onClick={toggleMenu}>☰</button>

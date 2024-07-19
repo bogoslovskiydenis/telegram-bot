@@ -1,42 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import PrivateRoute from "./routes/PrivateRoute";
-import Register from "./pages/Register";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from './firebase';
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./components/Dashboard";
 
 const App = () => {
-    // Function to check if the user is authenticated
-    const isAuthenticated = () => {
-        // Check for authToken in localStorage
-        return localStorage.getItem('authToken') !== null;
-    };
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <Router>
             <Routes>
-                {/* Home page */}
                 <Route path="/" element={
-                    isAuthenticated() ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
+                    user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
                 } />
-
-                {/* Login page */}
                 <Route path="/login" element={
-                    isAuthenticated() ? <Navigate to="/dashboard" /> : <Login />
+                    user ? <Navigate to="/dashboard" /> : <Login />
                 } />
-
-                {/* Register page */}
-                <Route path="/register" element={<Register />} />
-
-                {/* Protected route for dashboard */}
+                <Route path="/register" element={
+                    user ? <Navigate to="/dashboard" /> : <Register />
+                } />
                 <Route path="/dashboard" element={
-                    <PrivateRoute>
-                        <Dashboard />
-                    </PrivateRoute>
+                    user ? <Dashboard /> : <Navigate to="/login" />
                 } />
-
-                {/* Redirect to home page for all other routes */}
-                <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </Router>
     );
