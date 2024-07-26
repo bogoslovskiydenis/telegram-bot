@@ -25,7 +25,7 @@ const Dashboard = () => {
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const BOT_TOKEN = "6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU";
+    const BOT_TOKEN = process.env.REACT_APP_BOT_TOKEN;
 
     const fetchUserIds = useCallback(async () => {
         try {

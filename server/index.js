@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs').promises;
+const path = require('path');
 
 // Initialize Firebase Admin SDK
 const serviceAccount = require('./service.json');
@@ -75,24 +77,24 @@ app.post('/login', async (req, res) => {
         res.status(401).json({ error: 'Authentication failed' });
     }
 });
-let botText = {
-    welcome: `**Супер-Бонусы лучшего казино Казахстана!**
-**Рейтинг популярных слотов**
-**Слоты с самыми большими выигрышами**
-**Победные схемы от наших подписчиков**
-**Вопрос-ответ и отзыв**`
-};
-
-// API эндпоинт для обновления текста
-app.post('/api/update-text', (req, res) => {
-    const { text } = req.body;
-    if (!text) {
-        return res.status(400).json({ error: 'Text is required' });
-    }
-
-    botText.welcome = text;
-    res.json({ message: 'Welcome text updated successfully', newText: botText.welcome });
-});
+// let botText = {
+//     welcome: `**Супер-Бонусы лучшего казино Казахстана!**
+// **Рейтинг популярных слотов**
+// **Слоты с самыми большими выигрышами**
+// **Победные схемы от наших подписчиков**
+// **Вопрос-ответ и отзыв**`
+// };
+//
+// // API эндпоинт для обновления текста
+// app.post('/api/update-text', (req, res) => {
+//     const { text } = req.body;
+//     if (!text) {
+//         return res.status(400).json({ error: 'Text is required' });
+//     }
+//
+//     botText.welcome = text;
+//     res.json({ message: 'Welcome text updated successfully', newText: botText.welcome });
+// });
 
 // API эндпоинт для получения текущего текста
 app.get('/api/get-text', (req, res) => {
@@ -102,15 +104,15 @@ app.get('/api/get-text', (req, res) => {
 app.get('/protected', authenticateToken, (req, res) => {
     res.json({ message: 'Access granted to protected route' });
 });
-app.post('/api/update-text', (req, res) => {
-    const { text } = req.body;
-    if (!text) {
-        return res.status(400).json({ error: 'Text is required' });
-    }
-
-    botConfig.welcomeDescription = text;
-    res.json({ message: 'Welcome text updated successfully' });
-});
+// app.post('/api/update-text', (req, res) => {
+//     const { text } = req.body;
+//     if (!text) {
+//         return res.status(400).json({ error: 'Text is required' });
+//     }
+//
+//     botConfig.welcomeDescription = text;
+//     res.json({ message: 'Welcome text updated successfully' });
+// });
 // Middleware to authenticate token
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -127,7 +129,41 @@ function authenticateToken(req, res, next) {
             res.sendStatus(403);
         });
 }
+async function readConfig() {
+    try {
+        const data = await fs.readFile(path.join(__dirname, 'config.json'), 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading config:', error);
+        return { welcomeText: '' };
+    }
+}
 
+async function writeConfig(config) {
+    try {
+        await fs.writeFile(path.join(__dirname, 'config.json'), JSON.stringify(config, null, 2));
+    } catch (error) {
+        console.error('Error writing config:', error);
+    }
+}
+
+app.post('/api/update-text', async (req, res) => {
+    const { text } = req.body;
+    if (!text) {
+        return res.status(400).json({ error: 'Text is required' });
+    }
+
+    const config = await readConfig();
+    config.welcomeText = text;
+    await writeConfig(config);
+
+    res.json({ message: 'Welcome text updated successfully', newText: config.welcomeText });
+});
+
+app.get('/api/get-text', async (req, res) => {
+    const config = await readConfig();
+    res.json({ text: config.welcomeText });
+});
 const PORT = process.env.PORT || 5004;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

@@ -3,8 +3,9 @@ import path from "path";
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import {firebaseConfig} from "./firebase.js"
-const token = '6965532642:AAEGkS3VeQqHYKPueJ0V-xqo4TfPzdSWipU';
+import 'dotenv/config';
 
+const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, {polling: true});
 
 // Initialize Firebase
@@ -60,12 +61,11 @@ bot.on('message', (msg) => {
         // Отправляем приветственное видео и текст
         const videoPath = './assets/1th.mp4';
         const welcomeDescription = `
-        *                           *
-               **Супер-Бонусы лучшего казино Казахстана!**
-               **Рейтинг популярных слотов**
-               **Слоты с самыми большими выигрышами**
-               **Победные схемы от наших подписчиков**
-               **Вопрос-ответ и отзыв**
+**Супер-Бонусы лучшего казино Казахстана!**
+**Рейтинг популярных слотов**
+**Слоты с самыми большими выигрышами**
+**Победные схемы от наших подписчиков**
+**Вопрос-ответ и отзыв**
         `;
 
         // Отправляем видео
@@ -128,8 +128,8 @@ bot.on('callback_query', (callbackQuery) => {
             };
 
             // Отправляем сообщение с картинкой (замените путь на ваше изображение)
-            const imageURL = path.join("assets/1.png");
-            bot.sendPhoto(chatId, imageURL )
+            const VideoURL = path.join("assets/bonus.mp4");
+            bot.sendVideo(chatId, VideoURL )
                 .then(() => {
                     bot.sendMessage(chatId, bonusSectionMessage, bonusOptions);
                 })
@@ -141,18 +141,18 @@ bot.on('callback_query', (callbackQuery) => {
         case 'top_slots':
             // Открываем раздел с топ популярных слотов
             const topSlotsMessage = `
-                Самые популярные слоты за прошлую неделю:
+Самые популярные слоты за прошлую неделю:
 
-                1. **Sweet bonanza** - 5 776 698
-                2. **The ref reactor** - 3 455 893
-                3. **Sweet coin** - 3 398 765
-                4. **Book of ra** - 3 387 112
-                5. **Fortune five** - 3 000 453
-                6. **Gold rush** - 2 954 777
-                7. **Frozen crown** - 2 854 121
-                8. **Zeus** - 2 765 443
-                9. **Book of mystery** - 2 690 418
-            `;
+1. **Sweet bonanza** - 5 776 698
+2. **The ref reactor** - 3 455 893
+3. **Sweet coin** - 3 398 765
+4. **Book of ra** - 3 387 112
+5. **Fortune five** - 3 000 453
+6. **Gold rush** - 2 954 777
+7. **Frozen crown** - 2 854 121
+8. **Zeus** - 2 765 443
+9. **Book of mystery** - 2 690 418
+`;
             const topSlotsOptions = {
                 reply_markup: {
                     inline_keyboard: [
@@ -163,9 +163,8 @@ bot.on('callback_query', (callbackQuery) => {
                 parse_mode: 'Markdown'
             };
 
-            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
-            const top_slotsImageURL = 'assets/1.png';
-            bot.sendPhoto(chatId, top_slotsImageURL)
+            const topSlotsImageURL = './assets/topSlots.mp4';
+            bot.sendVideo(chatId, topSlotsImageURL)
                 .then(() => {
                     bot.sendMessage(chatId, topSlotsMessage, topSlotsOptions);
                 })
@@ -177,17 +176,17 @@ bot.on('callback_query', (callbackQuery) => {
         case 'top_wins':
             // Открываем раздел с топ популярных слотов
             const topWinsMessage = `
-                Самые популярные слоты за прошлую неделю:
+Самые популярные слоты за прошлую неделю:
 
-                1. **Sweet bonanza** - 5 776 698 USD
-                2. **The ref reactor** - 3 455 893 USD
-                3. **Sweet coin** - 3 398 765 USD
-                4. **Book of ra** - 3 387 112 USD
-                5. **Fortune five** - 3 000 453 USD
-                6. **Gold rush** - 2 954 777 USD
-                7. **Frozen crown** - 2 854 121 USD
-                8. **Zeus** - 2 765 443 USD
-                9. **Book of mystery** - 2 690 418 USD
+1. **Sweet bonanza** - 5 776 698 USD
+2. **The ref reactor** - 3 455 893 USD
+3. **Sweet coin** - 3 398 765 USD
+4. **Book of ra** - 3 387 112 USD
+5. **Fortune five** - 3 000 453 USD
+6. **Gold rush** - 2 954 777 USD
+7. **Frozen crown** - 2 854 121 USD
+8. **Zeus** - 2 765 443 USD
+9. **Book of mystery** - 2 690 418 USD
             `;
             const topWinsOptions = {
                 reply_markup: {
@@ -200,8 +199,8 @@ bot.on('callback_query', (callbackQuery) => {
             };
 
             // Отправляем сообщение с картинкой (замените путь на ваше изображение)
-            const topWinsImageURL = 'assets/1.png';
-            bot.sendPhoto(chatId, topWinsImageURL)
+            const topWinsVideoURL = './assets/bigwin.mp4';
+            bot.sendVideo(chatId, topWinsVideoURL)
                 .then(() => {
                     bot.sendMessage(chatId, topWinsMessage, topWinsOptions);
                 })
@@ -216,7 +215,6 @@ bot.on('callback_query', (callbackQuery) => {
 Лучшие победные схемы от наших подписчиков:
 
 Также вы можете поделиться со всеми своей победной схемой
-Кнопка **Кнопка написать**
             `;
             const winningStrategiesOptions = {
                 reply_markup: {
@@ -228,15 +226,15 @@ bot.on('callback_query', (callbackQuery) => {
                 },
                 parse_mode: 'Markdown'
             };
-            const winningStrategiesURL = 'assets/1.png';
-            bot.sendPhoto(chatId, winningStrategiesURL)
-                .then(() => {
-                    bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
-                })
-                .catch((error) => {
-                    console.error('Ошибка при отправке изображения:', error);
-                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
-                });
+            // const winningStrategiesURL = './assets/';
+            // bot.sendPhoto(chatId, winningStrategiesURL)
+            //     .then(() => {
+            //         bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
+            //     })
+            //     .catch((error) => {
+            //         console.error('Ошибка при отправке изображения:', error);
+            //         bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+            //     });
             // Отправляем сообщение с текстом
             bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
             break;
@@ -256,14 +254,14 @@ bot.on('callback_query', (callbackQuery) => {
             };
 
             // Отправляем сообщение с картинкой (замените путь на ваше изображение)
-            const newPlayerBonusImageURL = 'assets/1.png';
-            bot.sendPhoto(chatId, newPlayerBonusImageURL)
+            const newPlayerBonusVideoURL = './assets/bonus.mp4';
+            bot.sendVideo(chatId,  newPlayerBonusVideoURL)
                 .then(() => {
                     bot.sendMessage(chatId, newPlayerBonusMessage, newPlayerBonusOptions);
                 })
                 .catch((error) => {
                     console.error('Ошибка при отправке изображения:', error);
-                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+                    bot.sendVideo(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
                 });
             break;
         case 'other_bonuses':
@@ -272,7 +270,7 @@ bot.on('callback_query', (callbackQuery) => {
 [ПЕРВЫЙ КАЗИНО БОНУС](https://google.com)
 100% до ₸250000
 
-                                                            *ВТОРОЙ КАЗИНО БОНУС*
+*ВТОРОЙ КАЗИНО БОНУС*
 50% до ₸250000
 
 *ТРЕТИЙ КАЗИНО БОНУС*
@@ -300,8 +298,8 @@ Live-казино бонус 25%
             };
 
             // Отправляем сообщение с картинкой (замените путь на ваше изображение)
-            const otherBonusesImageURL = 'assets/1.png';
-            bot.sendPhoto(chatId, otherBonusesImageURL)
+            const otherBonusesVideoURL = './assets/bonus.mp4';
+            bot.sendVideo(chatId, otherBonusesVideoURL)
                 .then(() => {
                     bot.sendMessage(chatId, otherBonusesMessage, otherBonusesOptions);
                 })
