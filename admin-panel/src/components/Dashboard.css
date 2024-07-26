@@ -1,6 +1,5 @@
 /* Center the Dashboard */
 .dashboard {
-    max-width: 800px;
     margin: auto;
     padding: 20px;
     border: 1px solid #ddd;

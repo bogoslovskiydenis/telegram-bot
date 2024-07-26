@@ -136,7 +136,7 @@ bot.on('message', (msg) => {
 });
 
 // Обработчик для Inline Keyboard
-bot.on('callback_query', (callbackQuery) => {
+bot.on('callback_query', async (callbackQuery) => {
     const chatId = callbackQuery.message.chat.id;
     const data = callbackQuery.data;
 
@@ -168,19 +168,7 @@ bot.on('callback_query', (callbackQuery) => {
             break;
         case 'top_slots':
             // Открываем раздел с топ популярных слотов
-            const topSlotsMessage = `
-Самые популярные слоты за прошлую неделю:
-
-1. **Sweet bonanza** - 5 776 698
-2. **The ref reactor** - 3 455 893
-3. **Sweet coin** - 3 398 765
-4. **Book of ra** - 3 387 112
-5. **Fortune five** - 3 000 453
-6. **Gold rush** - 2 954 777
-7. **Frozen crown** - 2 854 121
-8. **Zeus** - 2 765 443
-9. **Book of mystery** - 2 690 418
-`;
+            const topSlotsMessage = await getWelcomeText();
             const topSlotsOptions = {
                 reply_markup: {
                     inline_keyboard: [
@@ -192,14 +180,16 @@ bot.on('callback_query', (callbackQuery) => {
             };
 
             const topSlotsImageURL = './assets/topSlots.mp4';
-            bot.sendVideo(chatId, topSlotsImageURL)
-                .then(() => {
-                    bot.sendMessage(chatId, topSlotsMessage, topSlotsOptions);
-                })
-                .catch((error) => {
+            try{
+         await   bot.sendVideo(chatId, topSlotsImageURL)
+               await     bot.sendMessage(chatId, topSlotsMessage, topSlotsOptions);
+
+
+         }
+                catch(error) {
                     console.error('Ошибка при отправке изображения:', error);
                     bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
-                });
+                };
             break;
         case 'top_wins':
             // Открываем раздел с топ популярных слотов

@@ -10,10 +10,10 @@ import { getAuth, signOut } from "firebase/auth";
 
 const Dashboard = () => {
     const [currentView, setCurrentView] = useState('send');
-    const [textMessage, setTextMessage] = useState('');
+    const [sendTextMessage, setSendTextMessage] = useState('');
     const [videoFile, setVideoFile] = useState(null);
+    const [updateTextMessage, setUpdateTextMessage] = useState('');
     const [welcomeText, setWelcomeText] = useState('');
-    const [newImage, setNewImage] = useState(null);
     const [messageStatus, setMessageStatus] = useState('');
     const [userIds, setUserIds] = useState([]);
     const [userNames, setUserNames] = useState([]);
@@ -42,7 +42,7 @@ const Dashboard = () => {
         try {
             const response = await axios.get('http://localhost:5004/api/get-text');
             setWelcomeText(response.data.text);
-            setTextMessage(response.data.text); // Set the textMessage as well
+            setUpdateTextMessage(response.data.text); // Set the updateTextMessage as well
         } catch (error) {
             console.error('Error fetching welcome text:', error);
             setMessageStatus('Failed to fetch welcome text. Please try again.');
@@ -63,10 +63,9 @@ const Dashboard = () => {
         fetchData();
     }, [fetchUserIds]);
 
-    const handleTextChange = (e) => setTextMessage(e.target.value);
+    const handleSendTextChange = (e) => setSendTextMessage(e.target.value);
     const handleVideoChange = (e) => setVideoFile(e.target.files[0]);
-    const handleWelcomeTextChange = (e) => setWelcomeText(e.target.value);
-    const handleNewImageChange = (e) => setNewImage(e.target.files[0]);
+    const handleUpdateTextChange = (e) => setUpdateTextMessage(e.target.value);
 
     const sendMessageToTelegram = async () => {
         if (!videoFile) {
@@ -82,7 +81,7 @@ const Dashboard = () => {
             try {
                 const formData = new FormData();
                 formData.append('chat_id', userId);
-                formData.append('caption', textMessage);
+                formData.append('caption', sendTextMessage);
                 formData.append('video', videoFile);
 
                 const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendVideo`, formData, {
@@ -102,7 +101,7 @@ const Dashboard = () => {
         }
 
         if (successCount > 0) {
-            setTextMessage('');
+            setSendTextMessage('');
             setVideoFile(null);
         }
 
@@ -111,7 +110,7 @@ const Dashboard = () => {
 
     const updateBotContent = async () => {
         try {
-            const response = await axios.post('http://localhost:5004/api/update-text', { text: welcomeText });
+            const response = await axios.post('http://localhost:5004/api/update-text', { text: updateTextMessage });
             setMessageStatus('Bot content updated successfully');
             setWelcomeText(response.data.newText);
         } catch (error) {
@@ -167,11 +166,6 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard">
-            <h2>Dashboard</h2>
-            <div className="main-menu">
-                <button onClick={() => switchView('send')}>Send Messages and Video</button>
-                <button onClick={() => switchView('update')}>Update Bot Content</button>
-            </div>
             <div className={`burger-menu ${isMenuOpen ? 'open' : ''}`}>
                 <button onClick={toggleMenu}>☰</button>
                 {isMenuOpen && (
@@ -182,42 +176,48 @@ const Dashboard = () => {
                     </div>
                 )}
             </div>
-
-            {currentView === 'send' ? (
-                <div className="view">
-                    <h3>Send Message and Video to Telegram</h3>
+            <div className="sidebar">
+                <h2>Dashboard</h2>
+                <button onClick={() => switchView('send')}>Send Message and Video to Telegram</button>
+                <button onClick={() => switchView('update')}>Update Bot Content</button>
+            </div>
+            <div className="content">
+                {currentView === 'send' ? (
                     <div>
-                        <label>Text Message:</label>
-                        <textarea value={textMessage} onChange={handleTextChange} rows="4" cols="50" />
+                        <h3>Send Message and Video to Telegram</h3>
+                        <div>
+                            <label>Text Message:</label>
+                            <textarea value={sendTextMessage} onChange={handleSendTextChange} rows="4" cols="50" />
+                        </div>
+                        <div>
+                            <label>Video File (MP4):</label>
+                            <input type="file" accept="video/mp4" onChange={handleVideoChange} />
+                        </div>
+                        <button onClick={sendMessageToTelegram}>Send Message and Video to All Users ({userIds.length})</button>
                     </div>
+                ) : (
                     <div>
-                        <label>Video File (MP4):</label>
-                        <input type="file" accept="video/mp4" onChange={handleVideoChange} />
+                        <h3>Update Bot Content</h3>
+                        <button onClick={fetchWelcomeText}>Load Welcome Text</button>
+                        <div>
+                            <label>Text Message:</label>
+                            <textarea value={updateTextMessage} onChange={handleUpdateTextChange} rows="4" cols="50" />
+                        </div>
+                        <button onClick={updateBotContent}>Update Bot Content</button>
                     </div>
-                    <button onClick={sendMessageToTelegram}>Send Message and Video to All Users ({userIds.length})</button>
-                </div>
-            ) : (
-                <div className="view">
-                    <h3>Update Bot Content</h3>
-                    <button onClick={fetchWelcomeText}>Load Welcome Text</button>
+                )}
+                {messageStatus && <p>{messageStatus}</p>}
+                {userNames.length > 0 && (
                     <div>
-                        <label>Text Message:</label>
-                        <textarea value={welcomeText} onChange={handleWelcomeTextChange} rows="4" cols="50" />
+                        <h3>User Names:</h3>
+                        <ul>
+                            {userNames.map((name, index) => (
+                                <li key={index}>{name}</li>
+                            ))}
+                        </ul>
                     </div>
-                    <button onClick={updateBotContent}>Update Bot Content</button>
-                </div>
-            )}
-            {messageStatus && <p>{messageStatus}</p>}
-            {userNames.length > 0 && (
-                <div>
-                    <h3>User Names:</h3>
-                    <ul>
-                        {userNames.map((name, index) => (
-                            <li key={index}>{name}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };
