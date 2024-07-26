@@ -4,6 +4,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import {firebaseConfig} from "./firebase.js"
 import 'dotenv/config';
+import axios from "axios";
 
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, {polling: true});
@@ -26,6 +27,42 @@ const writeUserData = async (userId, firstName, username) => {
     }
 };
 
+let currentWelcomeText = '';
+async function getWelcomeText() {
+    try {
+        const response = await axios.get('http://localhost:5004/api/get-text');
+        const newWelcomeText = response.data.text;
+
+        if (!newWelcomeText) {
+            console.warn('Полученный текст приветствия пуст.');
+            return 'Welcome to our bot!';
+        }
+
+        if (newWelcomeText !== currentWelcomeText) {
+            console.log('Welcome text has changed, updating...');
+            currentWelcomeText = newWelcomeText;
+        } else {
+            console.log('Welcome text has not changed.');
+        }
+
+        return currentWelcomeText;
+    } catch (error) {
+        console.error('Error fetching welcome text:', error.message);
+        return 'Welcome to our bot!';
+    }
+}
+
+setInterval(async () => {
+    try {
+        const newWelcomeText = await getWelcomeText();
+        if (newWelcomeText !== currentWelcomeText) {
+            currentWelcomeText = newWelcomeText;
+            console.log('Updated welcome text from API.');
+        }
+    } catch (error) {
+        console.error('Error updating welcome text from API:', error);
+    }
+}, 10 * 1000);
 // Слушаем команду /start
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
@@ -55,36 +92,27 @@ bot.onText(/\/start/, async (msg) => {
 });
 
 // Слушаем нажатие кнопки "Старт"
-bot.on('message', (msg) => {
+bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     if (msg.text.toLowerCase() === 'старт') {
-        // Отправляем приветственное видео и текст
         const videoPath = './assets/1th.mp4';
-        const welcomeDescription = `
-**Супер-Бонусы лучшего казино Казахстана!**
-**Рейтинг популярных слотов**
-**Слоты с самыми большими выигрышами**
-**Победные схемы от наших подписчиков**
-**Вопрос-ответ и отзыв**
-        `;
+        const welcomeText = await getWelcomeText();
 
-        // Отправляем видео
-        bot.sendVideo(chatId, videoPath).then(() => {
-            // Отправляем текстовое сообщение после видео
-            bot.sendMessage(chatId, welcomeDescription, {
+        try {
+            await bot.sendVideo(chatId, videoPath);
+            await bot.sendMessage(chatId, welcomeText, {
                 reply_markup: {
                     keyboard: [
-                        [{text: 'Начать использование'}]
+                        [{ text: 'Начать использование' }]
                     ],
                     resize_keyboard: true,
                     one_time_keyboard: true
                 },
                 parse_mode: 'Markdown'
             });
-        }).catch(err => {
-            console.error('Ошибка при отправке видео:', err);
-            bot.sendMessage(chatId, 'Не удалось отправить видео. Попробуйте позже.');
-        });
+        } catch (err) {
+            console.error('Error sending content:', err);
+        }
     }
 });
 

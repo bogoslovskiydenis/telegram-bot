@@ -1,13 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import './Dashboard.css'
+import './Dashboard.css';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from "../firebase";
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import {getAuth} from "firebase/auth";
-import { signOut } from "firebase/auth";
+import { getAuth, signOut } from "firebase/auth";
 
 const Dashboard = () => {
     const [currentView, setCurrentView] = useState('send');
@@ -39,20 +38,30 @@ const Dashboard = () => {
         }
     }, [db]);
 
+    const fetchWelcomeText = async () => {
+        try {
+            const response = await axios.get('http://localhost:5004/api/get-text');
+            setWelcomeText(response.data.text);
+            setTextMessage(response.data.text); // Set the textMessage as well
+        } catch (error) {
+            console.error('Error fetching welcome text:', error);
+            setMessageStatus('Failed to fetch welcome text. Please try again.');
+        }
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 await fetchUserIds();
+                await fetchWelcomeText();
             } catch (error) {
-                console.error('Error fetching user IDs:', error);
-                setMessageStatus('Failed to fetch user IDs. Please try again.');
+                console.error('Error fetching data:', error);
+                setMessageStatus('Failed to fetch data. Please try again.');
             }
         };
 
         fetchData();
-
     }, [fetchUserIds]);
-
 
     const handleTextChange = (e) => setTextMessage(e.target.value);
     const handleVideoChange = (e) => setVideoFile(e.target.files[0]);
@@ -101,7 +110,14 @@ const Dashboard = () => {
     };
 
     const updateBotContent = async () => {
-        // ... (остальной код без изменений)
+        try {
+            const response = await axios.post('http://localhost:5004/api/update-text', { text: welcomeText });
+            setMessageStatus('Bot content updated successfully');
+            setWelcomeText(response.data.newText);
+        } catch (error) {
+            console.error('Error updating bot content:', error);
+            setMessageStatus('Failed to update bot content. Please try again.');
+        }
     };
 
     const switchView = (view) => setCurrentView(view);
@@ -128,6 +144,7 @@ const Dashboard = () => {
             setMessageStatus('Failed to fetch user names. Please try again.');
         }
     };
+
     const exportUsersToExcel = async () => {
         try {
             const usersCollection = collection(db, 'users');
@@ -143,16 +160,17 @@ const Dashboard = () => {
             setMessageStatus('Failed to export users to Excel. Please try again.');
         }
     };
+
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
+
     return (
         <div className="dashboard">
             <h2>Dashboard</h2>
             <div className="main-menu">
-                {/*<button onClick={() => switchView('send')}>Send Messages and Video</button>*/}
-                {/*Update Bot Content We need write node server */}
-                {/*<button onClick={() => switchView('update')}>Update Bot Content</button>*/}
+                <button onClick={() => switchView('send')}>Send Messages and Video</button>
+                <button onClick={() => switchView('update')}>Update Bot Content</button>
             </div>
             <div className={`burger-menu ${isMenuOpen ? 'open' : ''}`}>
                 <button onClick={toggleMenu}>☰</button>
@@ -181,13 +199,10 @@ const Dashboard = () => {
             ) : (
                 <div className="view">
                     <h3>Update Bot Content</h3>
+                    <button onClick={fetchWelcomeText}>Load Welcome Text</button>
                     <div>
-                        <label>Welcome Text:</label>
+                        <label>Text Message:</label>
                         <textarea value={welcomeText} onChange={handleWelcomeTextChange} rows="4" cols="50" />
-                    </div>
-                    <div>
-                        <label>New Image:</label>
-                        <input type="file" accept="image/*" onChange={handleNewImageChange} />
                     </div>
                     <button onClick={updateBotContent}>Update Bot Content</button>
                 </div>
