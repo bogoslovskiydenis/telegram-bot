@@ -62,6 +62,46 @@ app.post('/api/update-text', async (req, res) => {
     }
 });
 
+app.get('/api/get-text/:type', async (req, res) => {
+    console.log(`GET /api/get-text/${req.params.type} request received`);
+    try {
+        const config = await readConfig();
+        const contentType = req.params.type;
+        if (config[contentType]) {
+            console.log(`Sending ${contentType}:`, config[contentType]);
+            res.json({ text: config[contentType] });
+        } else {
+            res.status(404).json({ error: 'Content type not found' });
+        }
+    } catch (error) {
+        console.error('Error handling GET /api/get-text request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/update-text', async (req, res) => {
+    console.log('POST /api/update-text request received with body:', req.body);
+    const { type, text } = req.body;
+    if (!type || !text) {
+        console.log('Type or text is missing in the request body');
+        return res.status(400).json({ error: 'Type and text are required' });
+    }
+
+    try {
+        const config = await readConfig();
+        if (config.hasOwnProperty(type)) {
+            config[type] = text;
+            await writeConfig(config);
+            console.log(`${type} updated successfully to:`, config[type]);
+            res.json({ message: `${type} updated successfully`, newText: config[type] });
+        } else {
+            res.status(404).json({ error: 'Content type not found' });
+        }
+    } catch (error) {
+        console.error('Error handling POST /api/update-text request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 const PORT = process.env.PORT || 5004;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

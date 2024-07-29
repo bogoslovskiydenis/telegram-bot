@@ -10,7 +10,7 @@ import { getAuth, signOut } from "firebase/auth";
 
 const Dashboard = () => {
     const [currentView, setCurrentView] = useState('send');
-    const [sendTextMessage, setSendTextMessage] = useState('');
+    const [textMessage, setTextMessage] = useState('');
     const [videoFile, setVideoFile] = useState(null);
     const [updateTextMessage, setUpdateTextMessage] = useState('');
     const [welcomeText, setWelcomeText] = useState('');
@@ -18,6 +18,8 @@ const Dashboard = () => {
     const [userIds, setUserIds] = useState([]);
     const [userNames, setUserNames] = useState([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [selectedContentType, setSelectedContentType] = useState('welcomeText');
+    const [contentText, setContentText] = useState('');
 
     const navigate = useNavigate();
 
@@ -42,16 +44,27 @@ const Dashboard = () => {
         try {
             const response = await axios.get('http://localhost:5004/api/get-text');
             setWelcomeText(response.data.text);
-            setUpdateTextMessage(response.data.text); // Set the updateTextMessage as well
+            setUpdateTextMessage(response.data.text);
         } catch (error) {
             console.error('Error fetching welcome text:', error);
             setMessageStatus('Failed to fetch welcome text. Please try again.');
         }
     };
 
+    const fetchContent = async (contentType) => {
+        try {
+            const response = await axios.get(`http://localhost:5004/api/get-text/${contentType}`);
+            setContentText(response.data.text);
+        } catch (error) {
+            console.error(`Error fetching ${contentType}:`, error);
+            setMessageStatus(`Failed to fetch ${contentType}. Please try again.`);
+        }
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             try {
+                await fetchContent(selectedContentType);
                 await fetchUserIds();
                 await fetchWelcomeText();
             } catch (error) {
@@ -61,38 +74,52 @@ const Dashboard = () => {
         };
 
         fetchData();
-    }, [fetchUserIds]);
+    }, [fetchUserIds, selectedContentType]);
 
-    const handleSendTextChange = (e) => setSendTextMessage(e.target.value);
+    const handleTextMessageChange = (e) => setTextMessage(e.target.value);
     const handleVideoChange = (e) => setVideoFile(e.target.files[0]);
     const handleUpdateTextChange = (e) => setUpdateTextMessage(e.target.value);
 
-    const sendMessageToTelegram = async () => {
-        if (!videoFile) {
-            setMessageStatus('Please select a video file.');
+    const sendMessageAndVideoToTelegram = async () => {
+        if (!videoFile && !textMessage) {
+            setMessageStatus('Please select a video file or enter a text message.');
             return;
         }
 
-        setMessageStatus('Sending video to all users...');
+        setMessageStatus('Sending message and/or video to all users...');
         let successCount = 0;
         let failCount = 0;
 
         for (const userId of userIds) {
             try {
-                const formData = new FormData();
-                formData.append('chat_id', userId);
-                formData.append('caption', sendTextMessage);
-                formData.append('video', videoFile);
+                if (videoFile) {
+                    const formData = new FormData();
+                    formData.append('chat_id', userId);
+                    formData.append('caption', textMessage);
+                    formData.append('video', videoFile);
 
-                const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendVideo`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                    const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendVideo`, formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
 
-                if (response.data && response.data.ok) {
-                    successCount++;
-                } else {
-                    failCount++;
-                    console.error(`Failed to send to user ${userId}:`, response.data);
+                    if (response.data && response.data.ok) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                        console.error(`Failed to send video to user ${userId}:`, response.data);
+                    }
+                } else if (textMessage) {
+                    const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                        chat_id: userId,
+                        text: textMessage
+                    });
+
+                    if (response.data && response.data.ok) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                        console.error(`Failed to send message to user ${userId}:`, response.data);
+                    }
                 }
             } catch (error) {
                 failCount++;
@@ -100,19 +127,18 @@ const Dashboard = () => {
             }
         }
 
-        if (successCount > 0) {
-            setSendTextMessage('');
-            setVideoFile(null);
-        }
-
-        setMessageStatus(`Video sent to ${successCount} users. Failed for ${failCount} users.`);
+        setTextMessage('');
+        setVideoFile(null);
+        setMessageStatus(`Message/Video sent to ${successCount} users. Failed for ${failCount} users.`);
     };
 
     const updateBotContent = async () => {
         try {
-            const response = await axios.post('http://localhost:5004/api/update-text', { text: updateTextMessage });
-            setMessageStatus('Bot content updated successfully');
-            setWelcomeText(response.data.newText);
+            const response = await axios.post('http://localhost:5004/api/update-text', {
+                type: selectedContentType,
+                text: contentText
+            });
+            setMessageStatus(`${selectedContentType} updated successfully`);
         } catch (error) {
             console.error('Error updating bot content:', error);
             setMessageStatus('Failed to update bot content. Please try again.');
@@ -182,26 +208,53 @@ const Dashboard = () => {
                 <button onClick={() => switchView('update')}>Update Bot Content</button>
             </div>
             <div className="content">
-                {currentView === 'send' ? (
+                {currentView === 'send' && (
                     <div>
                         <h3>Send Message and Video to Telegram</h3>
                         <div>
                             <label>Text Message:</label>
-                            <textarea value={sendTextMessage} onChange={handleSendTextChange} rows="4" cols="50" />
+                            <textarea
+                                value={textMessage}
+                                onChange={handleTextMessageChange}
+                                rows="4"
+                                cols="50"
+                            />
                         </div>
                         <div>
                             <label>Video File (MP4):</label>
-                            <input type="file" accept="video/mp4" onChange={handleVideoChange} />
+                            <input
+                                type="file"
+                                accept="video/mp4"
+                                onChange={handleVideoChange}
+                            />
                         </div>
-                        <button onClick={sendMessageToTelegram}>Send Message and Video to All Users ({userIds.length})</button>
+                        <button onClick={sendMessageAndVideoToTelegram}>
+                            Send Message and/or Video to All Users ({userIds.length})
+                        </button>
                     </div>
-                ) : (
+                )}
+                {currentView === 'update' && (
                     <div>
                         <h3>Update Bot Content</h3>
-                        <button onClick={fetchWelcomeText}>Load Welcome Text</button>
+                        <select
+                            value={selectedContentType}
+                            onChange={(e) => setSelectedContentType(e.target.value)}
+                        >
+                            <option value="welcomeText">Welcome Text</option>
+                            <option value="newPlayerBonuses">New Player Bonuses</option>
+                            <option value="otherBonuses">Other Bonuses</option>
+                            <option value="topWins">Top Wins</option>
+                            <option value="topSlots">Top Slots</option>
+                        </select>
+                        <button onClick={() => fetchContent(selectedContentType)}>Load Text</button>
                         <div>
-                            <label>Text Message:</label>
-                            <textarea value={updateTextMessage} onChange={handleUpdateTextChange} rows="4" cols="50" />
+                            <label>Text Content:</label>
+                            <textarea
+                                value={contentText}
+                                onChange={(e) => setContentText(e.target.value)}
+                                rows="4"
+                                cols="50"
+                            />
                         </div>
                         <button onClick={updateBotContent}>Update Bot Content</button>
                     </div>
