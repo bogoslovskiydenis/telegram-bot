@@ -38,18 +38,7 @@ const Dashboard = () => {
             console.error('Error fetching user IDs:', error);
             setMessageStatus('Failed to fetch user IDs. Please try again.');
         }
-    }, [db]);
-
-    const fetchWelcomeText = async () => {
-        try {
-            const response = await axios.get('http://localhost:5004/api/get-text');
-            setWelcomeText(response.data.text);
-            setUpdateTextMessage(response.data.text);
-        } catch (error) {
-            console.error('Error fetching welcome text:', error);
-            setMessageStatus('Failed to fetch welcome text. Please try again.');
-        }
-    };
+    }, []);
 
     const fetchContent = async (contentType) => {
         try {
@@ -66,7 +55,6 @@ const Dashboard = () => {
             try {
                 await fetchContent(selectedContentType);
                 await fetchUserIds();
-                await fetchWelcomeText();
             } catch (error) {
                 console.error('Error fetching data:', error);
                 setMessageStatus('Failed to fetch data. Please try again.');
@@ -134,11 +122,15 @@ const Dashboard = () => {
 
     const updateBotContent = async () => {
         try {
-            const response = await axios.post('http://localhost:5004/api/update-text', {
-                type: selectedContentType,
+            const response = await axios.post(`http://localhost:5004/api/update-text/${selectedContentType}`, {
                 text: contentText
             });
-            setMessageStatus(`${selectedContentType} updated successfully`);
+            if (response.data && response.data.message) {
+                setMessageStatus(`${selectedContentType} updated successfully`);
+                setContentText(response.data.newText);
+            } else {
+                setMessageStatus('Unexpected response from server');
+            }
         } catch (error) {
             console.error('Error updating bot content:', error);
             setMessageStatus('Failed to update bot content. Please try again.');
@@ -238,7 +230,10 @@ const Dashboard = () => {
                         <h3>Update Bot Content</h3>
                         <select
                             value={selectedContentType}
-                            onChange={(e) => setSelectedContentType(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedContentType(e.target.value);
+                                fetchContent(e.target.value);
+                            }}
                         >
                             <option value="welcomeText">Welcome Text</option>
                             <option value="newPlayerBonuses">New Player Bonuses</option>

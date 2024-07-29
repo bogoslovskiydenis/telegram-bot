@@ -28,33 +28,23 @@ const writeUserData = async (userId, firstName, username) => {
 };
 
 let currentWelcomeText = '';
-async function getWelcomeText() {
+async function getContentFromServer(contentType) {
+    if (!contentType) {
+        console.error('Content type is undefined');
+        return null;
+    }
     try {
-        const response = await axios.get('http://localhost:5004/api/get-text');
-        const newWelcomeText = response.data.text;
-
-        if (!newWelcomeText) {
-            console.warn('Полученный текст приветствия пуст.');
-            return 'Welcome to our bot!';
-        }
-
-        if (newWelcomeText !== currentWelcomeText) {
-            console.log('Welcome text has changed, updating...');
-            currentWelcomeText = newWelcomeText;
-        } else {
-            console.log('Welcome text has not changed.');
-        }
-
-        return currentWelcomeText;
+        const response = await axios.get(`http://localhost:5004/api/get-text/${contentType}`);
+        return response.data.text;
     } catch (error) {
-        console.error('Error fetching welcome text:', error.message);
-        return 'Welcome to our bot!';
+        console.error(`Error fetching ${contentType} from server:`, error.message);
+        return null;
     }
 }
 
 setInterval(async () => {
     try {
-        const newWelcomeText = await getWelcomeText();
+        const newWelcomeText = await getContentFromServer();
         if (newWelcomeText !== currentWelcomeText) {
             currentWelcomeText = newWelcomeText;
             console.log('Updated welcome text from API.');
@@ -96,7 +86,7 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     if (msg.text.toLowerCase() === 'старт') {
         const videoPath = './assets/1th.mp4';
-        const welcomeText = await getWelcomeText();
+        const welcomeText = await getContentFromServer('welcomeText');
 
         try {
             await bot.sendVideo(chatId, videoPath);
@@ -168,7 +158,7 @@ bot.on('callback_query', async (callbackQuery) => {
             break;
         case 'top_slots':
             // Открываем раздел с топ популярных слотов
-            const topSlotsMessage = await getWelcomeText();
+            const topSlotsMessage = await getContentFromServer("topSlots");
             const topSlotsOptions = {
                 reply_markup: {
                     inline_keyboard: [
@@ -183,8 +173,6 @@ bot.on('callback_query', async (callbackQuery) => {
             try{
          await   bot.sendVideo(chatId, topSlotsImageURL)
                await     bot.sendMessage(chatId, topSlotsMessage, topSlotsOptions);
-
-
          }
                 catch(error) {
                     console.error('Ошибка при отправке изображения:', error);
@@ -192,20 +180,7 @@ bot.on('callback_query', async (callbackQuery) => {
                 };
             break;
         case 'top_wins':
-            // Открываем раздел с топ популярных слотов
-            const topWinsMessage = `
-Самые популярные слоты за прошлую неделю:
-
-1. **Sweet bonanza** - 5 776 698 USD
-2. **The ref reactor** - 3 455 893 USD
-3. **Sweet coin** - 3 398 765 USD
-4. **Book of ra** - 3 387 112 USD
-5. **Fortune five** - 3 000 453 USD
-6. **Gold rush** - 2 954 777 USD
-7. **Frozen crown** - 2 854 121 USD
-8. **Zeus** - 2 765 443 USD
-9. **Book of mystery** - 2 690 418 USD
-            `;
+            const topWinsMessage = await getContentFromServer('topWins');
             const topWinsOptions = {
                 reply_markup: {
                     inline_keyboard: [
@@ -216,16 +191,14 @@ bot.on('callback_query', async (callbackQuery) => {
                 parse_mode: 'Markdown'
             };
 
-            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
             const topWinsVideoURL = './assets/bigwin.mp4';
-            bot.sendVideo(chatId, topWinsVideoURL)
-                .then(() => {
-                    bot.sendMessage(chatId, topWinsMessage, topWinsOptions);
-                })
-                .catch((error) => {
-                    console.error('Ошибка при отправке изображения:', error);
-                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
-                });
+            try {
+                await bot.sendVideo(chatId, topWinsVideoURL);
+                await bot.sendMessage(chatId, topWinsMessage || 'Информация о топ выигрышах недоступна', topWinsOptions);
+            } catch(error) {
+                console.error('Ошибка при отправке видео или сообщения:', error);
+                bot.sendMessage(chatId, 'Не удалось загрузить видео или информацию. Попробуйте позже.');
+            }
             break;
         case 'winning_strategies':
             // Открываем раздел с победными схемами
@@ -254,57 +227,34 @@ bot.on('callback_query', async (callbackQuery) => {
             //         bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
             //     });
             // Отправляем сообщение с текстом
-            bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
+            await bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
             break;
         case 'qna_reviews':
-            bot.sendMessage(chatId, 'Здесь будут вопросы-ответы и отзывы');
+            await bot.sendMessage(chatId, 'Здесь будут вопросы-ответы и отзывы');
             break;
         case 'new_player_bonuses':
-            // Открываем новый раздел с картинкой, текстом и кнопками
-            const newPlayerBonusMessage = 'Всем новым игрокам Казино дарит приветственные бонус в 150% от суммы первого депозита в размере до 75000 тенге, а также 50 фриспинов.';
+            const newPlayerBonusMessage = await getContentFromServer('newPlayerBonuses');
             const newPlayerBonusOptions = {
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: 'Забрать бонус', url: 'https://google.com.ua/' }],
                         [{ text: 'Главное меню', callback_data: 'back_to_start' }]
                     ]
-                }
+                },
+                parse_mode: 'Markdown'
             };
 
-            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
             const newPlayerBonusVideoURL = './assets/bonus.mp4';
-            bot.sendVideo(chatId,  newPlayerBonusVideoURL)
-                .then(() => {
-                    bot.sendMessage(chatId, newPlayerBonusMessage, newPlayerBonusOptions);
-                })
-                .catch((error) => {
-                    console.error('Ошибка при отправке изображения:', error);
-                    bot.sendVideo(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
-                });
+            try {
+                await bot.sendVideo(chatId, newPlayerBonusVideoURL);
+                await bot.sendMessage(chatId, newPlayerBonusMessage || 'Информация о бонусах для новых игроков недоступна', newPlayerBonusOptions);
+            } catch(error) {
+                console.error('Ошибка при отправке видео или сообщения:', error);
+                await bot.sendMessage(chatId, 'Не удалось загрузить видео или информацию. Попробуйте позже.');
+            }
             break;
         case 'other_bonuses':
-            // Открываем новый раздел с картинкой, текстом и кнопками
-            const otherBonusesMessage = `
-[ПЕРВЫЙ КАЗИНО БОНУС](https://google.com)
-100% до ₸250000
-
-*ВТОРОЙ КАЗИНО БОНУС*
-50% до ₸250000
-
-*ТРЕТИЙ КАЗИНО БОНУС*
-500FS
-
-*СЕКРЕТНЫЕ БОНУСЫ*
-Только в нашем предложении
-
-*LIVE-РЕЛОАД В ПОНЕДЕЛЬНИК*
-Live-казино бонус 25%
-
-*ФРИСПИНЫ СРЕДЫ*
-100 фриспинов на удачу
-
-*ПЯТНИЧНЫЙ РЕЛОАД*
-30% до ₸50000`;
+            const otherBonusesMessage = await getContentFromServer('otherBonuses');
             const otherBonusesOptions = {
                 reply_markup: {
                     inline_keyboard: [
@@ -315,28 +265,26 @@ Live-казино бонус 25%
                 parse_mode: 'Markdown'
             };
 
-            // Отправляем сообщение с картинкой (замените путь на ваше изображение)
             const otherBonusesVideoURL = './assets/bonus.mp4';
-            bot.sendVideo(chatId, otherBonusesVideoURL)
-                .then(() => {
-                    bot.sendMessage(chatId, otherBonusesMessage, otherBonusesOptions);
-                })
-                .catch((error) => {
-                    console.error('Ошибка при отправке изображения:', error);
-                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
-                });
+            try {
+                await bot.sendVideo(chatId, otherBonusesVideoURL);
+                await bot.sendMessage(chatId, otherBonusesMessage || 'Информация о других бонусах недоступна', otherBonusesOptions);
+            } catch(error) {
+                console.error('Ошибка при отправке видео или сообщения:', error);
+                await bot.sendMessage(chatId, 'Не удалось загрузить видео или информацию. Попробуйте позже.');
+            }
             break;
         case 'back_to_start':
             // Возвращаемся к основному разделу выбора
             const startMessage = 'Выберите раздел:';
-            bot.sendMessage(chatId, startMessage, {
+            await bot.sendMessage(chatId, startMessage, {
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: 'Бонусы и акции', callback_data: 'bonuses' }],
-                        [{ text: 'TOP популярных слотов', callback_data: 'top_slots' }],
-                        [{ text: 'TOP выигрышей', callback_data: 'top_wins' }],
-                        [{ text: 'Победные схемы', callback_data: 'winning_strategies' }],
-                        [{ text: 'Вопрос-ответ-отзывы', callback_data: 'qna_reviews' }]
+                        [{text: 'Бонусы и акции', callback_data: 'bonuses'}],
+                        [{text: 'TOP популярных слотов', callback_data: 'top_slots'}],
+                        [{text: 'TOP выигрышей', callback_data: 'top_wins'}],
+                        [{text: 'Победные схемы', callback_data: 'winning_strategies'}],
+                        [{text: 'Вопрос-ответ-отзывы', callback_data: 'qna_reviews'}]
                     ]
                 }
             });
