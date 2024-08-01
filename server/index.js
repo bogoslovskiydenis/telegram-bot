@@ -16,7 +16,7 @@ async function readConfig() {
         return config;
     } catch (error) {
         console.error('Error reading config:', error);
-        return { welcomeText: '' };
+        return { welcomeText: '', welcomeVideoUrl: '', newPlayerBonuses: '', newPlayerBonusesVideoUrl: '', otherBonuses: '', otherBonusesVideoUrl: '', topWins: '', topWinsVideoUrl: '', topSlots: '', topSlotsVideoUrl: '' };
     }
 }
 
@@ -65,6 +65,44 @@ app.post('/api/update-text/:type', async (req, res) => {
         res.json({ message: `${type} updated successfully`, newText: config[type] });
     } catch (error) {
         console.error('Error handling POST /api/update-text request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// Загрузка ссылки на видео
+app.post('/api/upload-video', async (req, res) => {
+    const { url, type } = req.body;
+    console.log(`POST /api/upload-video request received with body:`, req.body);
+
+    if (!url || !type) {
+        return res.status(400).json({ error: 'URL and type are required' });
+    }
+
+    try {
+        const config = await readConfig();
+        config[`${type}VideoUrl`] = url;
+        await writeConfig(config);
+        res.json({ message: 'Video URL saved successfully', videoUrl: url });
+    } catch (error) {
+        console.error('Error handling POST /api/upload-video request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Получение ссылки на видео
+app.get('/api/get-video/:type', async (req, res) => {
+    const { type } = req.params;
+    console.log(`GET /api/get-video/${type} request received`);
+
+    try {
+        const config = await readConfig();
+        const videoUrl = config[`${type}VideoUrl`];
+        if (videoUrl) {
+            res.json({ videoUrl: videoUrl });
+        } else {
+            res.status(404).json({ error: `Video URL for ${type} not found` });
+        }
+    } catch (error) {
+        console.error('Error handling GET /api/get-video request:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

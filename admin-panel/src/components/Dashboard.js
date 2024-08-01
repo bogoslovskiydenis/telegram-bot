@@ -20,6 +20,7 @@ const Dashboard = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [selectedContentType, setSelectedContentType] = useState('welcomeText');
     const [contentText, setContentText] = useState('');
+    const [videoUrl, setVideoUrl] = useState('');
 
     const navigate = useNavigate();
 
@@ -44,6 +45,7 @@ const Dashboard = () => {
         try {
             const response = await axios.get(`http://localhost:5004/api/get-text/${contentType}`);
             setContentText(response.data.text);
+            setVideoUrl(response.data.videoUrl || '');
         } catch (error) {
             console.error(`Error fetching ${contentType}:`, error);
             setMessageStatus(`Failed to fetch ${contentType}. Please try again.`);
@@ -123,17 +125,36 @@ const Dashboard = () => {
     const updateBotContent = async () => {
         try {
             const response = await axios.post(`http://localhost:5004/api/update-text/${selectedContentType}`, {
-                text: contentText
+                text: contentText,
+                videoUrl: videoUrl
             });
             if (response.data && response.data.message) {
                 setMessageStatus(`${selectedContentType} updated successfully`);
                 setContentText(response.data.newText);
+                setVideoUrl(response.data.newVideoUrl || '');
             } else {
                 setMessageStatus('Unexpected response from server');
             }
         } catch (error) {
             console.error('Error updating bot content:', error);
             setMessageStatus('Failed to update bot content. Please try again.');
+        }
+    };
+    const uploadVideo = async () => {
+        try {
+            const response = await axios.post('http://localhost:5004/api/upload-video', {
+                url: videoUrl,
+                type: selectedContentType
+            });
+            if (response.data && response.data.message) {
+                setMessageStatus('Video URL uploaded successfully');
+                setVideoUrl(response.data.videoUrl);
+            } else {
+                setMessageStatus('Unexpected response from server');
+            }
+        } catch (error) {
+            console.error('Error uploading video URL:', error);
+            setMessageStatus('Failed to upload video URL. Please try again.');
         }
     };
 
@@ -251,7 +272,16 @@ const Dashboard = () => {
                                 cols="50"
                             />
                         </div>
+                        <div>
+                            <label>Video URL:</label>
+                            <input
+                                type="text"
+                                value={videoUrl}
+                                onChange={(e) => setVideoUrl(e.target.value)}
+                            />
+                        </div>
                         <button onClick={updateBotContent}>Update Bot Content</button>
+                        <button onClick={uploadVideo}>Upload Video URL</button>
                     </div>
                 )}
                 {messageStatus && <p>{messageStatus}</p>}

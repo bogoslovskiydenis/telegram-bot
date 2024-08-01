@@ -27,7 +27,6 @@ const writeUserData = async (userId, firstName, username) => {
     }
 };
 
-let currentWelcomeText = '';
 async function getContentFromServer(contentType) {
     if (!contentType) {
         console.error('Content type is undefined');
@@ -42,23 +41,26 @@ async function getContentFromServer(contentType) {
     }
 }
 
-setInterval(async () => {
-    try {
-        const newWelcomeText = await getContentFromServer();
-        if (newWelcomeText !== currentWelcomeText) {
-            currentWelcomeText = newWelcomeText;
-            console.log('Updated welcome text from API.');
-        }
-    } catch (error) {
-        console.error('Error updating welcome text from API:', error);
+async function getVideoUrlFromServer(contentType) {
+    if (!contentType) {
+        console.error('Content type is undefined');
+        return null;
     }
-}, 10 * 1000);
+    try {
+        const response = await axios.get(`http://localhost:5004/api/get-video/${contentType}`);
+        return response.data.videoUrl;
+    } catch (error) {
+        console.error(`Error fetching video URL for ${contentType} from server:`, error.message);
+        return null;
+    }
+}
+
 // Слушаем команду /start
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     const firstName = msg.from.first_name;
-    const username = msg.from.username || ''; // Use an empty string if the username is not available
+    const username = msg.from.username || '';
 
     try {
         // Write userId to Firestore
@@ -77,14 +79,13 @@ bot.onText(/\/start/, async (msg) => {
         });
     } catch (error) {
         console.error('Error handling /start command:', error);
-        // Handle the error as needed
     }
 });
 
 // Слушаем нажатие кнопки "Старт"
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
-    if (msg.text.toLowerCase() === 'старт') {
+    if (msg.text && msg.text.toLowerCase() === 'старт') {
         const videoPath = './assets/1th.mp4';
         const welcomeText = await getContentFromServer('welcomeText');
 
@@ -171,13 +172,13 @@ bot.on('callback_query', async (callbackQuery) => {
 
             const topSlotsImageURL = './assets/topSlots.mp4';
             try{
-         await   bot.sendVideo(chatId, topSlotsImageURL)
-               await     bot.sendMessage(chatId, topSlotsMessage, topSlotsOptions);
-         }
-                catch(error) {
-                    console.error('Ошибка при отправке изображения:', error);
-                    bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
-                };
+                await bot.sendVideo(chatId, topSlotsImageURL)
+                await bot.sendMessage(chatId, topSlotsMessage, topSlotsOptions);
+            }
+            catch(error) {
+                console.error('Ошибка при отправке изображения:', error);
+                bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
+            };
             break;
         case 'top_wins':
             const topWinsMessage = await getContentFromServer('topWins');
@@ -217,15 +218,6 @@ bot.on('callback_query', async (callbackQuery) => {
                 },
                 parse_mode: 'Markdown'
             };
-            // const winningStrategiesURL = './assets/';
-            // bot.sendPhoto(chatId, winningStrategiesURL)
-            //     .then(() => {
-            //         bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
-            //     })
-            //     .catch((error) => {
-            //         console.error('Ошибка при отправке изображения:', error);
-            //         bot.sendMessage(chatId, 'Не удалось загрузить изображение. Попробуйте позже.');
-            //     });
             // Отправляем сообщение с текстом
             await bot.sendMessage(chatId, winningStrategiesMessage, winningStrategiesOptions);
             break;
@@ -234,6 +226,7 @@ bot.on('callback_query', async (callbackQuery) => {
             break;
         case 'new_player_bonuses':
             const newPlayerBonusMessage = await getContentFromServer('newPlayerBonuses');
+            const newPlayerBonusVideoURL = await getVideoUrlFromServer('newPlayerBonuses');
             const newPlayerBonusOptions = {
                 reply_markup: {
                     inline_keyboard: [
@@ -244,9 +237,12 @@ bot.on('callback_query', async (callbackQuery) => {
                 parse_mode: 'Markdown'
             };
 
-            const newPlayerBonusVideoURL = './assets/bonus.mp4';
             try {
-                await bot.sendVideo(chatId, newPlayerBonusVideoURL);
+                if (newPlayerBonusVideoURL) {
+                    await bot.sendVideo(chatId, newPlayerBonusVideoURL);
+                } else {
+                    console.log('No video URL provided for new player bonuses');
+                }
                 await bot.sendMessage(chatId, newPlayerBonusMessage || 'Информация о бонусах для новых игроков недоступна', newPlayerBonusOptions);
             } catch(error) {
                 console.error('Ошибка при отправке видео или сообщения:', error);
@@ -255,6 +251,7 @@ bot.on('callback_query', async (callbackQuery) => {
             break;
         case 'other_bonuses':
             const otherBonusesMessage = await getContentFromServer('otherBonuses');
+            const otherBonusesVideoURL = await getVideoUrlFromServer('otherBonuses');
             const otherBonusesOptions = {
                 reply_markup: {
                     inline_keyboard: [
@@ -265,9 +262,12 @@ bot.on('callback_query', async (callbackQuery) => {
                 parse_mode: 'Markdown'
             };
 
-            const otherBonusesVideoURL = './assets/bonus.mp4';
             try {
-                await bot.sendVideo(chatId, otherBonusesVideoURL);
+                if (otherBonusesVideoURL) {
+                    await bot.sendVideo(chatId, otherBonusesVideoURL);
+                } else {
+                    console.log('No video URL provided for other bonuses');
+                }
                 await bot.sendMessage(chatId, otherBonusesMessage || 'Информация о других бонусах недоступна', otherBonusesOptions);
             } catch(error) {
                 console.error('Ошибка при отправке видео или сообщения:', error);
