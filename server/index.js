@@ -2,11 +2,17 @@ const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
 const cors = require('cors');
+const multer = require('multer');
+const axios = require('axios');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Define multer storage and upload middleware
+const upload = multer({ dest: 'uploads/' });
+
+// Function to read and write configuration (existing functions)
 async function readConfig() {
     try {
         console.log('Reading configuration file...');
@@ -16,7 +22,7 @@ async function readConfig() {
         return config;
     } catch (error) {
         console.error('Error reading config:', error);
-        return { welcomeText: '', welcomeVideoUrl: '', newPlayerBonuses: '', newPlayerBonusesVideoUrl: '', otherBonuses: '', otherBonusesVideoUrl: '', topWins: '', topWinsVideoUrl: '', topSlots: '', topSlotsVideoUrl: '' };
+        return {}; // Return an empty object if reading fails
     }
 }
 
@@ -30,16 +36,17 @@ async function writeConfig(config) {
     }
 }
 
+// Route definitions
 app.get('/api/get-text/:type', async (req, res) => {
     const { type } = req.params;
     console.log(`GET /api/get-text/${type} request received`);
     try {
         const config = await readConfig();
-        if (config[type]) {
-            console.log(`Sending ${type}:`, config[type]);
-            res.json({ text: config[type] });
+        if (config[type] && config[type].text) {
+            console.log(`Sending ${type} text:`, config[type].text);
+            res.json({ text: config[type].text });
         } else {
-            res.status(404).json({ error: `Content type ${type} not found` });
+            res.status(404).json({ error: `Text for content type ${type} not found` });
         }
     } catch (error) {
         console.error('Error handling GET /api/get-text request:', error);
@@ -59,16 +66,19 @@ app.post('/api/update-text/:type', async (req, res) => {
 
     try {
         const config = await readConfig();
-        config[type] = text;
+        if (!config[type]) {
+            config[type] = {};
+        }
+        config[type].text = text;
         await writeConfig(config);
-        console.log(`${type} updated successfully to:`, config[type]);
-        res.json({ message: `${type} updated successfully`, newText: config[type] });
+        console.log(`${type} text updated successfully to:`, config[type].text);
+        res.json({ message: `${type} text updated successfully`, newText: config[type].text });
     } catch (error) {
         console.error('Error handling POST /api/update-text request:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Загрузка ссылки на видео
+
 app.post('/api/upload-video', async (req, res) => {
     const { url, type } = req.body;
     console.log(`POST /api/upload-video request received with body:`, req.body);
@@ -79,7 +89,10 @@ app.post('/api/upload-video', async (req, res) => {
 
     try {
         const config = await readConfig();
-        config[`${type}VideoUrl`] = url;
+        if (!config[type]) {
+            config[type] = {};
+        }
+        config[type].videoUrl = url;
         await writeConfig(config);
         res.json({ message: 'Video URL saved successfully', videoUrl: url });
     } catch (error) {
@@ -88,21 +101,89 @@ app.post('/api/upload-video', async (req, res) => {
     }
 });
 
-// Получение ссылки на видео
-app.get('/api/get-video/:type', async (req, res) => {
+app.post('/api/upload-video/:type', upload.single('video'), async (req, res) => {
     const { type } = req.params;
-    console.log(`GET /api/get-video/${type} request received`);
+    const { file } = req;
+
+    if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const newFileName = `${type}_video${path.extname(file.originalname)}`;
+    const newPath = path.join(__dirname, 'uploads', newFileName);
 
     try {
+        await fs.rename(file.path, newPath);
+
         const config = await readConfig();
-        const videoUrl = config[`${type}VideoUrl`];
-        if (videoUrl) {
-            res.json({ videoUrl: videoUrl });
+        if (!config[type]) {
+            config[type] = {};
+        }
+        config[type].videoPath = newPath;
+        await writeConfig(config);
+
+        res.json({ message: 'Video uploaded successfully', videoPath: newPath });
+    } catch (error) {
+        console.error('Error handling video upload:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/get-video/:type', async (req, res) => {
+    const { type } = req.params;
+    try {
+        const config = await readConfig();
+        const videoPath = config[type]?.videoPath;
+        console.log('Requested videoPath:', videoPath); // Debug log
+
+        if (videoPath && await fs.access(videoPath).then(() => true).catch(() => false)) {
+            res.sendFile(path.resolve(videoPath)); // Ensure path is absolute
         } else {
-            res.status(404).json({ error: `Video URL for ${type} not found` });
+            res.status(404).json({ error: `Video for ${type} not found` });
         }
     } catch (error) {
         console.error('Error handling GET /api/get-video request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/download-video', async (req, res) => {
+    const { url, type } = req.body;
+    console.log(`POST /api/download-video request received with body:`, req.body);
+
+    if (!url || !type) {
+        return res.status(400).json({ error: 'URL and type are required' });
+    }
+
+    const fileName = `${type}_video.mp4`;
+    const filePath = path.join(__dirname, 'uploads', fileName);
+
+    try {
+        const response = await axios({
+            url,
+            method: 'GET',
+            responseType: 'stream',
+        });
+
+        const writer = response.data.pipe(require('fs').createWriteStream(filePath));
+
+        writer.on('finish', async () => {
+            const config = await readConfig();
+            if (!config[type]) {
+                config[type] = {};
+            }
+            config[type].videoPath = filePath;
+            await writeConfig(config);
+
+            res.json({ message: 'Video downloaded and saved successfully', videoPath: filePath });
+        });
+
+        writer.on('error', (err) => {
+            console.error('Error writing video to disk:', err);
+            res.status(500).json({ error: 'Error saving the video' });
+        });
+    } catch (error) {
+        console.error('Error downloading video:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

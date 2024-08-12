@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import './Dashboard.css';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
@@ -13,14 +13,15 @@ const Dashboard = () => {
     const [textMessage, setTextMessage] = useState('');
     const [videoFile, setVideoFile] = useState(null);
     const [updateTextMessage, setUpdateTextMessage] = useState('');
-    const [welcomeText, setWelcomeText] = useState('');
     const [messageStatus, setMessageStatus] = useState('');
     const [userIds, setUserIds] = useState([]);
     const [userNames, setUserNames] = useState([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [selectedContentType, setSelectedContentType] = useState('welcomeText');
+    const [selectedContentType, setSelectedContentType] = useState('welcome');
     const [contentText, setContentText] = useState('');
-    const [videoUrl, setVideoUrl] = useState('');
+    const [videos, setVideos] = useState({});
+    const [videoPreview, setVideoPreview] = useState(null);
+    const videoRef = useRef(null);
 
     const navigate = useNavigate();
 
@@ -39,18 +40,27 @@ const Dashboard = () => {
             console.error('Error fetching user IDs:', error);
             setMessageStatus('Failed to fetch user IDs. Please try again.');
         }
-    }, []);
+    }, [db]);
 
     const fetchContent = async (contentType) => {
         try {
             const response = await axios.get(`http://localhost:5004/api/get-text/${contentType}`);
             setContentText(response.data.text);
-            setVideoUrl(response.data.videoUrl || '');
+            const videoUrl = await axios.get(`http://localhost:5004/api/get-video/${contentType}`, {
+                responseType: 'blob' // Ensure correct content type handling
+            });
+            const videoObjectUrl = URL.createObjectURL(videoUrl.data);
+            setVideos({
+                ...videos,
+                [contentType]: videoObjectUrl
+            });
+            setVideoPreview(videoObjectUrl);
         } catch (error) {
             console.error(`Error fetching ${contentType}:`, error);
             setMessageStatus(`Failed to fetch ${contentType}. Please try again.`);
         }
     };
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -67,9 +77,37 @@ const Dashboard = () => {
     }, [fetchUserIds, selectedContentType]);
 
     const handleTextMessageChange = (e) => setTextMessage(e.target.value);
-    const handleVideoChange = (e) => setVideoFile(e.target.files[0]);
+    const handleVideoChange = (e) => {
+        const file = e.target.files[0];
+        setVideoFile(file);
+        setVideoPreview(URL.createObjectURL(file));
+    };
     const handleUpdateTextChange = (e) => setUpdateTextMessage(e.target.value);
+    const handleVideoUpload = async () => {
+        if (!videoFile) {
+            setMessageStatus('Please select a video file');
+            return;
+        }
 
+        const formData = new FormData();
+        formData.append('video', videoFile);
+
+        try {
+            const response = await axios.post(`http://localhost:5004/api/upload-video/${selectedContentType}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (response.data && response.data.message) {
+                setMessageStatus(response.data.message);
+                fetchContent(selectedContentType); // Refresh content after upload
+            } else {
+                setMessageStatus('Unexpected response from server');
+            }
+        } catch (error) {
+            console.error('Error uploading video:', error);
+            setMessageStatus('Failed to upload video. Please try again.');
+        }
+    };
     const sendMessageAndVideoToTelegram = async () => {
         if (!videoFile && !textMessage) {
             setMessageStatus('Please select a video file or enter a text message.');
@@ -126,35 +164,21 @@ const Dashboard = () => {
         try {
             const response = await axios.post(`http://localhost:5004/api/update-text/${selectedContentType}`, {
                 text: contentText,
-                videoUrl: videoUrl
+                videoUrl: videos[selectedContentType]
             });
             if (response.data && response.data.message) {
                 setMessageStatus(`${selectedContentType} updated successfully`);
                 setContentText(response.data.newText);
-                setVideoUrl(response.data.newVideoUrl || '');
+                setVideos({
+                    ...videos,
+                    [selectedContentType]: response.data.newVideoUrl || ''
+                });
             } else {
                 setMessageStatus('Unexpected response from server');
             }
         } catch (error) {
             console.error('Error updating bot content:', error);
             setMessageStatus('Failed to update bot content. Please try again.');
-        }
-    };
-    const uploadVideo = async () => {
-        try {
-            const response = await axios.post('http://localhost:5004/api/upload-video', {
-                url: videoUrl,
-                type: selectedContentType
-            });
-            if (response.data && response.data.message) {
-                setMessageStatus('Video URL uploaded successfully');
-                setVideoUrl(response.data.videoUrl);
-            } else {
-                setMessageStatus('Unexpected response from server');
-            }
-        } catch (error) {
-            console.error('Error uploading video URL:', error);
-            setMessageStatus('Failed to upload video URL. Please try again.');
         }
     };
 
@@ -216,85 +240,52 @@ const Dashboard = () => {
                 )}
             </div>
             <div className="sidebar">
-                <h2>Dashboard</h2>
                 <button onClick={() => switchView('send')}>Send Message and Video to Telegram</button>
                 <button onClick={() => switchView('update')}>Update Bot Content</button>
             </div>
             <div className="content">
                 {currentView === 'send' && (
-                    <div>
-                        <h3>Send Message and Video to Telegram</h3>
-                        <div>
-                            <label>Text Message:</label>
-                            <textarea
-                                value={textMessage}
-                                onChange={handleTextMessageChange}
-                                rows="4"
-                                cols="50"
-                            />
-                        </div>
-                        <div>
-                            <label>Video File (MP4):</label>
-                            <input
-                                type="file"
-                                accept="video/mp4"
-                                onChange={handleVideoChange}
-                            />
-                        </div>
-                        <button onClick={sendMessageAndVideoToTelegram}>
-                            Send Message and/or Video to All Users ({userIds.length})
-                        </button>
+                    <div className="send-message">
+                        <h2>Send Message and Video to Telegram</h2>
+                        <textarea
+                            value={textMessage}
+                            onChange={handleTextMessageChange}
+                            placeholder="Enter your message"
+                        />
+                        <input type="file" accept="video/*" onChange={handleVideoChange} />
+                        {videoPreview && (
+                            <video ref={videoRef} controls src={videoPreview} width="300" />
+                        )}
+                        <button onClick={sendMessageAndVideoToTelegram}>Send</button>
                     </div>
                 )}
                 {currentView === 'update' && (
-                    <div>
-                        <h3>Update Bot Content</h3>
+                    <div className="update-content">
+                        <h2>Update Bot Content</h2>
                         <select
                             value={selectedContentType}
-                            onChange={(e) => {
-                                setSelectedContentType(e.target.value);
-                                fetchContent(e.target.value);
-                            }}
+                            onChange={(e) => setSelectedContentType(e.target.value)}
                         >
-                            <option value="welcomeText">Welcome Text</option>
+                            <option value="welcome">Welcome Text</option>
                             <option value="newPlayerBonuses">New Player Bonuses</option>
-                            <option value="otherBonuses">Other Bonuses</option>
                             <option value="topWins">Top Wins</option>
                             <option value="topSlots">Top Slots</option>
+                            <option value="otherBonuses">Other Bonuses</option>
                         </select>
-                        <button onClick={() => fetchContent(selectedContentType)}>Load Text</button>
-                        <div>
-                            <label>Text Content:</label>
-                            <textarea
-                                value={contentText}
-                                onChange={(e) => setContentText(e.target.value)}
-                                rows="4"
-                                cols="50"
-                            />
-                        </div>
-                        <div>
-                            <label>Video URL:</label>
-                            <input
-                                type="text"
-                                value={videoUrl}
-                                onChange={(e) => setVideoUrl(e.target.value)}
-                            />
-                        </div>
-                        <button onClick={updateBotContent}>Update Bot Content</button>
-                        <button onClick={uploadVideo}>Upload Video URL</button>
+                        <textarea
+                            value={contentText}
+                            onChange={(e) => setContentText(e.target.value)}
+                            placeholder="Update the content text"
+                        />
+                        <input type="file" accept="video/*" onChange={handleVideoChange} />
+                        {videoPreview && (
+                            <video ref={videoRef} controls src={videoPreview} width="300" />
+                        )}
+                        <button onClick={handleVideoUpload}>Upload Video</button>
+                        <button onClick={updateBotContent}>Update Content</button>
                     </div>
                 )}
-                {messageStatus && <p>{messageStatus}</p>}
-                {userNames.length > 0 && (
-                    <div>
-                        <h3>User Names:</h3>
-                        <ul>
-                            {userNames.map((name, index) => (
-                                <li key={index}>{name}</li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
+                <p>{messageStatus}</p>
             </div>
         </div>
     );

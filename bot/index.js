@@ -54,6 +54,21 @@ async function getVideoUrlFromServer(contentType) {
         return null;
     }
 }
+async function getVideoFromServer(contentType) {
+    if (!contentType) {
+        console.error('Content type is undefined');
+        return null;
+    }
+    try {
+        const response = await axios.get(`http://localhost:5004/api/get-video/${contentType}`, {
+            responseType: 'arraybuffer'
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching video for ${contentType} from server:`, error.message);
+        return null;
+    }
+}
 
 // Слушаем команду /start
 bot.onText(/\/start/, async (msg) => {
@@ -86,8 +101,8 @@ bot.onText(/\/start/, async (msg) => {
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     if (msg.text && msg.text.toLowerCase() === 'старт') {
-        const videoPath = './assets/1th.mp4';
-        const welcomeText = await getContentFromServer('welcomeText');
+        const videoPath = await getVideoFromServer('welcome');
+        const welcomeText = await getContentFromServer('welcome');
 
         try {
             await bot.sendVideo(chatId, videoPath);
@@ -147,7 +162,7 @@ bot.on('callback_query', async (callbackQuery) => {
             };
 
             // Отправляем сообщение с картинкой (замените путь на ваше изображение)
-            const VideoURL = path.join("assets/bonus.mp4");
+            const VideoURL = "./assets/bonus.mp4";
             bot.sendVideo(chatId, VideoURL )
                 .then(() => {
                     bot.sendMessage(chatId, bonusSectionMessage, bonusOptions);
@@ -170,7 +185,7 @@ bot.on('callback_query', async (callbackQuery) => {
                 parse_mode: 'Markdown'
             };
 
-            const topSlotsImageURL = './assets/topSlots.mp4';
+            const topSlotsImageURL = await getVideoFromServer("topSlots");
             try{
                 await bot.sendVideo(chatId, topSlotsImageURL)
                 await bot.sendMessage(chatId, topSlotsMessage, topSlotsOptions);
@@ -191,8 +206,7 @@ bot.on('callback_query', async (callbackQuery) => {
                 },
                 parse_mode: 'Markdown'
             };
-
-            const topWinsVideoURL = './assets/bigwin.mp4';
+            const topWinsVideoURL = await getVideoFromServer('topWins');
             try {
                 await bot.sendVideo(chatId, topWinsVideoURL);
                 await bot.sendMessage(chatId, topWinsMessage || 'Информация о топ выигрышах недоступна', topWinsOptions);
@@ -226,7 +240,7 @@ bot.on('callback_query', async (callbackQuery) => {
             break;
         case 'new_player_bonuses':
             const newPlayerBonusMessage = await getContentFromServer('newPlayerBonuses');
-            const newPlayerBonusVideoURL = await getVideoUrlFromServer('newPlayerBonuses');
+            const newPlayerBonusVideoURL = await getVideoFromServer('newPlayerBonuses');
             const newPlayerBonusOptions = {
                 reply_markup: {
                     inline_keyboard: [
@@ -251,7 +265,7 @@ bot.on('callback_query', async (callbackQuery) => {
             break;
         case 'other_bonuses':
             const otherBonusesMessage = await getContentFromServer('otherBonuses');
-            const otherBonusesVideoURL = await getVideoUrlFromServer('otherBonuses');
+            const otherBonusesVideoURL = await getVideoFromServer('otherBonuses');
             const otherBonusesOptions = {
                 reply_markup: {
                     inline_keyboard: [
