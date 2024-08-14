@@ -14,12 +14,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // Функция записи user_id в Firebase
-const writeUserData = async (userId, firstName, username) => {
+const writeUserData = async (userId, firstName, username ,phoneNumber ) => {
     try {
         await setDoc(doc(db, 'users', String(userId)), {
             userId: userId,
             firstName: firstName,
-            username: username
+            username: username,
+            phoneNumber: phoneNumber
         });
         console.log('User data saved successfully');
     } catch (error) {
@@ -109,7 +110,7 @@ bot.on('message', async (msg) => {
             await bot.sendMessage(chatId, welcomeText, {
                 reply_markup: {
                     keyboard: [
-                        [{ text: 'Начать использование' }]
+                        [{ text: 'Поделиться номером телефона', request_contact: true }]
                     ],
                     resize_keyboard: true,
                     one_time_keyboard: true
@@ -122,12 +123,24 @@ bot.on('message', async (msg) => {
     }
 });
 
-bot.on('message', (msg) => {
+bot.on('contact', async (msg) => {
     const chatId = msg.chat.id;
-    if (msg.text === 'Начать использование') {
-        // Отправляем новый раздел с кнопками через Inline Keyboard
+    const userId = msg.from.id;
+    const firstName = msg.from.first_name;
+    const username = msg.from.username || '';
+    const phoneNumber = msg.contact.phone_number;
+    try {
+        // Update the user data in Firebase with the phone number
+        await writeUserData(userId, firstName, username , phoneNumber);
+
+        console.log('Phone number saved successfully');
+
+        // Send a confirmation message
+        await bot.sendMessage(chatId, 'Спасибо! Ваш номер телефона сохранен.');
+
+        // Proceed to the main menu
         const sectionMessage = 'Выберите раздел:';
-        bot.sendMessage(chatId, sectionMessage, {
+        await bot.sendMessage(chatId, sectionMessage, {
             reply_markup: {
                 inline_keyboard: [
                     [{ text: 'Бонусы и акции', callback_data: 'bonuses' }],
@@ -138,6 +151,9 @@ bot.on('message', (msg) => {
                 ]
             }
         });
+    } catch (error) {
+        console.error('Error saving phone number to Firestore:', error);
+        await bot.sendMessage(chatId, 'Извините, произошла ошибка при сохранении номера телефона.');
     }
 });
 
