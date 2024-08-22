@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./components/Dashboard";
 import PasswordReset from "./pages/PasswordReset";
+import PrivateRoute from './routes/PrivateRoute';
 
 const App = () => {
     const [user, setUser] = useState(null);
@@ -37,7 +38,9 @@ const App = () => {
                     user ? <Navigate to="/dashboard" /> : <Register />
                 } />
                 <Route path="/dashboard" element={
-                    user ? <Dashboard /> : <Navigate to="/login" />
+                    <PrivateRoute user={user}>
+                        <Dashboard />
+                    </PrivateRoute>
                 } />
                 <Route path="/password-reset" element={
                     user ? <Navigate to="/dashboard" /> : <PasswordReset />

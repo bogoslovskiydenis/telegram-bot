@@ -1,13 +1,14 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 
-const PrivateRoute = ({ children }) => {
-    const isAuthenticated = () => {
-        // Ваша логика проверки аутентификации
-        return localStorage.getItem('authToken') !== null;
-    };
+const PrivateRoute = ({ user, children }) => {
+    if (!user) {
+        // Если пользователь не аутентифицирован, перенаправляем на страницу входа
+        return <Navigate to="/login" replace />;
+    }
 
-    return isAuthenticated() ? children : <Navigate to="/login" />;
+    // Если пользователь аутентифицирован, рендерим защищенный компонент
+    return children;
 };
 
 export default PrivateRoute;

@@ -1,5 +1,4 @@
 import TelegramBot from 'node-telegram-bot-api';
-import path from "path";
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import {firebaseConfig} from "./firebase.js"
@@ -34,7 +33,7 @@ async function getContentFromServer(contentType) {
         return null;
     }
     try {
-        const response = await axios.get(`http://localhost:5004/api/get-text/${contentType}`);
+        const response = await axios.get(`http://80.90.183.182:5004/api/get-text/${contentType}`);
         return response.data.text;
     } catch (error) {
         console.error(`Error fetching ${contentType} from server:`, error.message);
@@ -48,7 +47,7 @@ async function getVideoUrlFromServer(contentType) {
         return null;
     }
     try {
-        const response = await axios.get(`http://localhost:5004/api/get-video/${contentType}`);
+        const response = await axios.get(`http://80.90.183.182:5004/api/get-video/${contentType}`);
         return response.data.videoUrl;
     } catch (error) {
         console.error(`Error fetching video URL for ${contentType} from server:`, error.message);
@@ -61,7 +60,7 @@ async function getVideoFromServer(contentType) {
         return null;
     }
     try {
-        const response = await axios.get(`http://localhost:5004/api/get-video/${contentType}`, {
+        const response = await axios.get(`http://80.90.183.182:5004/api/get-video/${contentType}`, {
             responseType: 'arraybuffer'
         });
         return response.data;
