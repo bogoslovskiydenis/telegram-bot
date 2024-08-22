@@ -17,8 +17,12 @@ const Register = () => {
             // Redirect to login page after successful registration
             setTimeout(() => navigate('/login'), 2000);
         } catch (error) {
-            setMessage('Error registering user');
-            console.error('Registration error:', error);
+            if (error.code === 'auth/email-already-in-use') {
+                setMessage('User already created');
+            } else {
+                setMessage('Error registering user');
+                console.error('Registration error:', error);
+            }
         }
     };
 

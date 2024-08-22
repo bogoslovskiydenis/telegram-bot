@@ -44,9 +44,9 @@ const Dashboard = () => {
 
     const fetchContent = async (contentType) => {
         try {
-            const response = await axios.get(`http://localhost:5004/api/get-text/${contentType}`);
+            const response = await axios.get(`http://80.90.183.182:5004/api/get-text/${contentType}`);
             setContentText(response.data.text);
-            const videoUrl = await axios.get(`http://localhost:5004/api/get-video/${contentType}`, {
+            const videoUrl = await axios.get(`http://80.90.183.182:5004/api/get-video/${contentType}`, {
                 responseType: 'blob' // Ensure correct content type handling
             });
             const videoObjectUrl = URL.createObjectURL(videoUrl.data);
@@ -93,7 +93,7 @@ const Dashboard = () => {
         formData.append('video', videoFile);
 
         try {
-            const response = await axios.post(`http://localhost:5004/api/upload-video/${selectedContentType}`, formData, {
+            const response = await axios.post(`http://80.90.183.182:5004/api/upload-video/${selectedContentType}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -162,7 +162,7 @@ const Dashboard = () => {
 
     const updateBotContent = async () => {
         try {
-            const response = await axios.post(`http://localhost:5004/api/update-text/${selectedContentType}`, {
+            const response = await axios.post(`http://80.90.183.182:5004/api/update-text/${selectedContentType}`, {
                 text: contentText,
                 videoUrl: videos[selectedContentType]
             });
@@ -240,8 +240,18 @@ const Dashboard = () => {
                 )}
             </div>
             <div className="sidebar">
-                <button onClick={() => switchView('send')}>Send Message and Video to Telegram</button>
-                <button onClick={() => switchView('update')}>Update Bot Content</button>
+                <button
+                    onClick={() => switchView('send')}
+                    className={currentView === 'send' ? 'active' : ''}
+                >
+                    Send Message and Video to Telegram
+                </button>
+                <button
+                    onClick={() => switchView('update')}
+                    className={currentView === 'update' ? 'active' : ''}
+                >
+                    Update Bot Content
+                </button>
             </div>
             <div className="content">
                 {currentView === 'send' && (

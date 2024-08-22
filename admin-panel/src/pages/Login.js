@@ -48,20 +48,36 @@ const Login = () => {
                 <button type="submit" style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}>Login</button>
             </form>
             {message && <p style={{ marginTop: '1rem', color: message.startsWith('Invalid') ? 'red' : 'green' }}>{message}</p>}
-            <button
-                onClick={() => navigate('/register')}
-                style={{
-                    marginTop: '1rem',
-                    padding: '0.5rem 1rem',
-                    fontSize: '1rem',
-                    backgroundColor: '#4CAF50',
-                    color: 'white',
-                    border: 'none',
-                    cursor: 'pointer'
-                }}
-            >
-                Register
-            </button>
+            <div style={{display: "flex" , alignItems:'center' , justifyContent: 'space-around'}}>
+                <button
+                    onClick={() => navigate('/register')}
+                    style={{
+                        marginTop: '1rem',
+                        padding: '0.5rem 1rem',
+                        fontSize: '1rem',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Register
+                </button>
+                <button
+                    onClick={() => navigate('/password-reset')}
+                    style={{
+                        marginTop: '1rem',
+                        padding: '0.5rem 1rem',
+                        fontSize: '1rem',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Forgot Password
+                </button>
+            </div>
         </div>
     );
 };

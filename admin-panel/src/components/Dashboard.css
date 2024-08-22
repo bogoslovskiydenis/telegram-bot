@@ -7,12 +7,21 @@
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     position: relative;
 }
-
+.sidebar button.active {
+    background-color: #4CAF50; /* or any other color you prefer */
+    color: white;
+}
 .dashboard h2 {
     text-align: center;
     margin-bottom: 20px;
 }
-
+.video-preview img {
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f5f5f5;
+    display: block;
+    margin: 0 auto;
+}
 /* Button styles */
 .dashboard button {
     padding: 10px 20px;
@@ -25,9 +34,9 @@
     color: white;
 }
 
-.dashboard button:hover {
-    background-color: #235c9a;
-}
+/*.dashboard button:hover {*/
+/*    background-color: #235c9a;*/
+/*}*/
 
 .dashboard .view {
     margin-top: 20px;

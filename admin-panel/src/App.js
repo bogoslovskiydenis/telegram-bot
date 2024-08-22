@@ -5,6 +5,7 @@ import { auth } from './firebase';
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./components/Dashboard";
+import PasswordReset from "./pages/PasswordReset";
 
 const App = () => {
     const [user, setUser] = useState(null);
@@ -37,6 +38,9 @@ const App = () => {
                 } />
                 <Route path="/dashboard" element={
                     user ? <Dashboard /> : <Navigate to="/login" />
+                } />
+                <Route path="/password-reset" element={
+                    user ? <Navigate to="/dashboard" /> : <PasswordReset />
                 } />
             </Routes>
         </Router>
